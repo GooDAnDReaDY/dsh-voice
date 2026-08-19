@@ -1,0 +1,19 @@
+# dsh-voice bundle layer: applied automatically when the package is installed
+# as a profile bundle (package.json declares dsh.bundle.patch).
+#
+# `name` must stay the full npm package name: the client-modules registry
+# resolves the browser bundle by the loader entry name, so a shortened name
+# leaves the UI half silently out of window.__DSH_BOOT__.
+#
+# Override any field in the profile's own cordis.patch.yml, e.g. to point the
+# plugin at a local whisper.cpp build:
+#
+#   - id: dsh-voice
+#     config:
+#       whisperBin: /opt/whisper.cpp/build/bin/whisper-server
+#       whisperModel: /opt/whisper.cpp/models/ggml-medium-q8_0.bin
+#
+- insert:
+    - id: dsh-voice
+      name: '@goodandready/dsh-voice'
+      config: {}

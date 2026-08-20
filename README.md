@@ -39,15 +39,56 @@ Keys are read through the DSH credentials service (Settings → Credentials, or
 `$DSH_HOME/.credentials.yaml`), falling back to the process environment. A
 provider without a key is skipped, not fatal.
 
+### Your own providers
+
+Any OpenAI-compatible API can be added as a provider and used in the chains
+next to the built-in ones. Two templates, because those APIs disagree on how
+audio is sent:
+
+| Template | Endpoint | Request | Transcript read from |
+|---|---|---|---|
+| `openai-transcriptions` | `{baseURL}/audio/transcriptions` | multipart: file, model, language | `text` |
+| `openai-chat-audio` | `{baseURL}/chat/completions` | JSON with `input_audio`: base64 and format | `choices[0].message.content` |
+
+OpenRouter has no `/audio/transcriptions` endpoint at all — use the chat
+template there:
+
+```yaml
+- id: dsh-voice
+  config:
+    customProviders:
+      - key: openrouter
+        template: openai-chat-audio
+        baseURL: https://openrouter.ai/api/v1
+        model: google/gemini-2.5-flash
+        keyEnv: OPENROUTER_API_KEY
+    message:
+      chain:
+        - provider: openrouter
+        - provider: local-whisper
+```
+
+Fields: `key` is the name the chains refer to (it cannot shadow a built-in
+one), `keyEnv` names the credential holding the API key (empty means no
+authorization header), and `prompt` overrides the instruction sent with the
+audio in the chat template. A row in a chain may still override `model`.
+
+The chat template accepts WAV and MP3 only, while the browser records
+webm/opus — the plugin converts with ffmpeg, the same way the local whisper
+provider does, so **ffmpeg is required for `openai-chat-audio`**.
+
 ## Configure (Web GUI)
 
-Settings → **Голос** (Voice) has three blocks:
+Settings → **Голос** (Voice) has four blocks:
 
 - **Dictation** — fallback chain (provider + optional model per row, order is
   the order of attempts), language, and the silence threshold that ends a
   phrase (`vadSilenceMs`, default 700 ms).
 - **Voice message** — its own independent chain, language, and the cancel
   window before the message is sent (`autoSendMs`, default 4000 ms).
+- **Your own providers** — an OpenAI-compatible API per card: name, template,
+  base URL, model, credential name. The name becomes selectable in both chains
+  as soon as it is filled in.
 - **General** — local whisper endpoint, binary, model, autostart.
 
 Speed matters for dictation and accuracy for messages, which is why the chains

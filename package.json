@@ -1,7 +1,7 @@
 {
   "name": "@goodandready/dsh-voice",
-  "version": "0.3.0",
-  "description": "Voice input for DeepSeek Harness: dictation chunked by pauses and voice messages, each with its own provider fallback chain (Deepgram, Groq, HuggingFace, local whisper.cpp).",
+  "version": "0.4.0",
+  "description": "Voice input for DeepSeek Harness: dictation chunked by pauses and voice messages, each with its own provider fallback chain (Deepgram, Groq, HuggingFace, local whisper.cpp, plus any OpenAI-compatible API of your own).",
   "license": "MIT",
   "type": "module",
   "main": "./lib/index.js",
@@ -26,7 +26,9 @@
     "dictation",
     "whisper",
     "deepgram",
-    "groq"
+    "groq",
+    "openrouter",
+    "openai-compatible"
   ],
   "repository": {
     "type": "git",

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { makeProviders, DEFAULT_MODELS, PROVIDER_KEYS, CUSTOM_TEMPLATES } from '../lib/providers.js'
+import { makeProviders, DEFAULT_MODELS, PROVIDER_KEYS, PRESET_PROVIDERS, PRESET_KEYS, KNOWN_KEYS, CUSTOM_TEMPLATES } from '../lib/providers.js'
 
 const bytes = new Uint8Array([1, 2, 3])
 
@@ -308,4 +308,62 @@ test('ошибка HTTP у своего провайдера становитс�
   const out = await providers.openrouter()
   assert.equal(out.ok, false)
   assert.match(out.reason, /HTTP 429/)
+})
+
+// -------------------------------------------------------------- заготовки
+
+test('заготовки доступны без единой строчки настроек', async () => {
+  let seen = ''
+  const fetchImpl = async (url, init) => {
+    seen = String(url)
+    return { ok: true, json: async () => ({ text: 'готово' }) }
+  }
+  const providers = makeProviders(depsWith(fetchImpl), {
+    bytes, mime: 'audio/webm', lang: 'ru', signal: undefined, models: {},
+  })
+  const out = await providers.openai()
+  assert.equal(out.ok, true)
+  assert.equal(out.text, 'готово')
+  assert.equal(seen, 'https://api.openai.com/v1/audio/transcriptions')
+})
+
+test('у каждой заготовки заполнено всё, что нужно для работы', () => {
+  for (const key of PRESET_KEYS) {
+    const preset = PRESET_PROVIDERS[key]
+    assert.ok(preset.baseURL.startsWith('https://'), key + ': адрес')
+    assert.ok(preset.model, key + ': модель')
+    assert.ok(preset.keyEnv, key + ': имя ключа')
+    assert.ok(CUSTOM_TEMPLATES.includes(preset.template), key + ': шаблон')
+  }
+})
+
+test('у OpenRouter чат-шаблон, потому что обычного эндпоинта у него нет', () => {
+  assert.equal(PRESET_PROVIDERS.openrouter.template, 'openai-chat-audio')
+})
+
+test('известные имена — это встроенные плюс заготовки', () => {
+  assert.deepEqual(KNOWN_KEYS, PROVIDER_KEYS.concat(PRESET_KEYS))
+})
+
+test('своё описание перекрывает заготовку целиком', async () => {
+  let seen = ''
+  const fetchImpl = async (url) => { seen = String(url); return { ok: true, json: async () => ({ text: 'своё' }) } }
+  const spec = {
+    key: 'openai', template: 'openai-transcriptions',
+    baseURL: 'https://свой-шлюз.local/v1', model: 'моя-модель', keyEnv: 'MY_KEY',
+  }
+  const providers = makeProviders(customDeps(fetchImpl, spec), {
+    bytes, mime: 'audio/webm', lang: 'ru', signal: undefined, models: {},
+  })
+  const out = await providers.openai()
+  assert.equal(out.text, 'своё')
+  assert.equal(seen, 'https://свой-шлюз.local/v1/audio/transcriptions')
+})
+
+test('встроенный движок своим описанием не перекрыть', async () => {
+  const spec = { key: 'groq', template: 'openai-transcriptions', baseURL: 'https://evil.example', model: 'x' }
+  const providers = makeProviders(customDeps(async () => ({}), spec), {
+    bytes, mime: 'audio/wav', lang: 'ru', signal: undefined, models: {},
+  })
+  assert.equal(providers.groq.name, 'groq')
 })

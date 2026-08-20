@@ -40,6 +40,32 @@ Keys are read through the DSH credentials service (Settings → Credentials, or
 `$DSH_HOME/.credentials.yaml`), falling back to the process environment. A
 provider without a key is skipped, not fatal.
 
+### Ready-made providers
+
+Six providers are filled in already — put the name in a chain and add the key:
+
+| Name | Model | Credential |
+|---|---|---|
+| `openai` | `whisper-1` | `OPENAI_API_KEY` |
+| `siliconflow` | `FunAudioLLM/SenseVoiceSmall` | `SILICONFLOW_API_KEY` |
+| `deepinfra` | `openai/whisper-large-v3-turbo` | `DEEPINFRA_API_KEY` |
+| `fireworks` | `whisper-v3-turbo` | `FIREWORKS_API_KEY` |
+| `mistral` | `voxtral-mini-latest` | `MISTRAL_API_KEY` |
+| `openrouter` | `google/gemini-2.5-flash` | `OPENROUTER_API_KEY` |
+
+```yaml
+- id: dsh-voice
+  config:
+    message:
+      chain:
+        - provider: openai
+        - provider: local-whisper
+```
+
+Every endpoint was probed without a key before being written down: all six answered `401`, the answer of a path that exists and wants credentials. The model ids are starting points — override `model` in a chain row to change one.
+
+A preset is the same form as a custom provider with the fields filled in, so a `customProviders` entry under the same name replaces it outright.
+
 ### Your own providers
 
 Any OpenAI-compatible API can be added as a provider and used in the chains

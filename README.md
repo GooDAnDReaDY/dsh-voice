@@ -30,6 +30,7 @@ Restart the Web UI afterwards, then hard-refresh the browser.
 
 | Key | Service | Default model | Credential |
 |---|---|---|---|
+| `browser` | the browser's own speech recognition | — | none, and nothing is uploaded to the host |
 | `deepgram` | Deepgram | `nova-2` | `DEEPGRAM_API_KEY` |
 | `groq` | Groq | `whisper-large-v3-turbo` | `GROQ_API_KEY` |
 | `hf` | HuggingFace Inference | `openai/whisper-large-v3` | `HF_TOKEN` |
@@ -76,6 +77,37 @@ audio in the chat template. A row in a chain may still override `model`.
 The chat template accepts WAV and MP3 only, while the browser records
 webm/opus — the plugin converts with ffmpeg, the same way the local whisper
 provider does, so **ffmpeg is required for `openai-chat-audio`**.
+
+## Three ways to speak
+
+| Gesture | What happens |
+|---|---|
+| Click the microphone | dictation: speech is cut on pauses and each phrase is appended to the composer |
+| Click the wave | a voice message: recording runs until you stop it, then the text is sent after a cancel window |
+| **Hold the wave** | records only while held; release sends it, moving the pointer off the button discards |
+| **Hold `Ctrl`** | the same without reaching for the mouse; `Escape` discards |
+
+The hotkey is `hotkey` in the settings — a modifier name (`Control`, `Alt`, `Shift`) or a `KeyboardEvent` code. Empty turns it off.
+
+## Recognition in the browser
+
+Put `browser` first in a chain and speech is recognised by the browser itself: no key, no upload to this host, and the text appears **while you are still speaking** — an interim caption in the recording bar, with each finished phrase going into the composer.
+
+```yaml
+- id: dsh-voice
+  config:
+    dictation:
+      chain:
+        - provider: browser
+        - provider: local-whisper   # если браузер не умеет — обычный путь
+```
+
+Two things to know before choosing it:
+
+- **Chrome sends the audio to Google.** Firefox has no such API at all. Everything else in this plugin keeps audio between your browser and your own host, so this provider is the one exception — it is never used unless you put it in a chain yourself.
+- It needs a secure context (HTTPS or localhost), like the microphone itself.
+
+Put a normal provider after it: if the browser cannot do it, recording falls back to the chain as usual.
 
 ## Configure (Web GUI)
 

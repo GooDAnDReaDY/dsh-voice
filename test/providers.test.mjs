@@ -17,9 +17,19 @@ function depsWith(fetchImpl, key = 'secret') {
   }
 }
 
-test('экспортирует все четыре ключа и модели по умолчанию', () => {
-  assert.deepEqual(PROVIDER_KEYS, ['deepgram', 'groq', 'hf', 'local-whisper'])
+test('экспортирует все встроенные ключи и модели по умолчанию', () => {
+  assert.deepEqual(PROVIDER_KEYS, ['browser', 'deepgram', 'groq', 'hf', 'local-whisper'])
   assert.equal(DEFAULT_MODELS.groq, 'whisper-large-v3-turbo')
+})
+
+test('browser на хосте не выполняется, а вежливо уступает следующему', async () => {
+  const providers = makeProviders(depsWith(async () => { throw new Error('сеть трогать не должны') }), {
+    bytes, mime: 'audio/webm', lang: 'ru', signal: undefined, models: {},
+  })
+  const out = await providers.browser()
+  assert.equal(out.ok, false)
+  assert.equal(out.provider, 'browser')
+  assert.match(out.reason, /в браузере/)
 })
 
 test('deepgram подставляет выбранную модель в URL', async () => {
@@ -172,7 +182,7 @@ test('свой провайдер попадает в карту под свои
     bytes, mime: 'audio/wav', lang: 'ru', signal: undefined, models: {},
   })
   assert.equal(typeof providers.openrouter, 'function')
-  assert.deepEqual(Object.keys(providers).slice(0, 4), PROVIDER_KEYS)
+  assert.deepEqual(Object.keys(providers).slice(0, PROVIDER_KEYS.length), PROVIDER_KEYS)
 })
 
 test('шаблон transcriptions шлёт multipart на {baseURL}/audio/transcriptions', async () => {

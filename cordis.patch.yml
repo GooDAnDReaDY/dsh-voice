@@ -10,8 +10,12 @@
 #
 #   - id: dsh-voice
 #     config:
-#       whisperBin: /opt/whisper.cpp/build/bin/whisper-server
-#       whisperModel: /opt/whisper.cpp/models/ggml-medium-q8_0.bin
+#       whisperBin: /path/to/whisper-server
+#       whisperModel: /path/to/ggml-model.bin
+#
+# Both are absolute paths on the machine that runs the harness, and both are
+# yours to fill in: the package cannot know where a whisper.cpp build and its
+# model happen to live.
 #
 - insert:
     - id: dsh-voice

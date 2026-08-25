@@ -137,7 +137,9 @@ Put a normal provider after it: if the browser cannot do it, recording falls bac
 
 ## Configure (Web GUI)
 
-Settings → **Голос** (Voice) has four blocks:
+Settings → **Plugins → Plugin settings → Voice** — the plugin's own
+collapsible card in the plugins tab; the sidebar keeps no separate row for it.
+The card has four blocks:
 
 - **Dictation** — fallback chain (provider + optional model per row, order is
   the order of attempts), language, and the silence threshold that ends a

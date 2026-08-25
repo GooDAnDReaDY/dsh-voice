@@ -27,7 +27,7 @@ Worktree: DEV/dhsplugins/dsh-voice/.worktrees/issue-18-plugin-tab-card
 - Живая проверка после deploy (отдельное согласование): карточка в вкладке,
   боковой строки нет, сохранение работает.
 
-### Phase 4: Docs+PR (Status: in_progress)
+### Phase 4: Docs+PR (Status: complete)
 - README (новое место настроек), AGENTS.md + index.md проекта (создать),
   Memory Brain. Commit, push, WIP PR, merge.
 
@@ -43,4 +43,7 @@ Worktree: DEV/dhsplugins/dsh-voice/.worktrees/issue-18-plugin-tab-card
 | (none yet) | | |
 
 ## Next Step
-Закоммитить, пожать, создать PR → мердж → согласовать деплой/смок.
+Смог на staging (ждет согласования пользователя).
+
+### Phase 5: Deploy+smoke (Status: pending)
+- [ ] RELEASE-copy update -> staging install -> UI smoke -> publish version -> prod profile

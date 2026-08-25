@@ -5,4 +5,4 @@
 - [x] Implement client.js
 - [x] Tests 33/33 + node --check
 - [x] README/AGENTS/index обновлены
-- [ ] Commit/push/PR/merge
+- [x] Commit d0697ad, push, PR #19 -> merge (main b7c8bb3)

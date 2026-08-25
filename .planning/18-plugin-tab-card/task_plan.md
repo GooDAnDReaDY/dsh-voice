@@ -27,7 +27,7 @@ Worktree: DEV/dhsplugins/dsh-voice/.worktrees/issue-18-plugin-tab-card
 - Живая проверка после deploy (отдельное согласование): карточка в вкладке,
   боковой строки нет, сохранение работает.
 
-### Phase 4: Docs+PR (Status: in_progress)
+### Phase 4: Docs+PR (Status: complete)
 - README (новое место настроек), AGENTS.md + index.md проекта (создать),
   Memory Brain. Commit, push, WIP PR, merge.
 
@@ -43,4 +43,14 @@ Worktree: DEV/dhsplugins/dsh-voice/.worktrees/issue-18-plugin-tab-card
 | (none yet) | | |
 
 ## Next Step
-Закоммитить, пожать, создать PR → мердж → согласовать деплой/смок.
+Смог на staging (ждет согласования пользователя).
+
+### Phase 5: Deploy+smoke (Status: in_progress)
+- [x] release-0.8.0 PR #20 merged (main 4ea24b8)
+- [x] RELEASE copy synced, commit f9c9daa
+- [x] Staging unblocked (issue dsh-staging#24, tts->npm 0.3.2), voice 0.8.0 file:-install
+- [x] HTTP smoke passed (boot/client.js/status)
+- [ ] User visual check on :3082
+- [ ] Publish: Gitea tag v0.8.0, GitHub tag+release, npm publish
+- [ ] Prod profile -> npm 0.8.0, restart dsh-web, prod smoke
+- [ ] RELEASE-copy update -> staging install -> UI smoke -> publish version -> prod profile

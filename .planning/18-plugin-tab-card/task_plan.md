@@ -45,5 +45,12 @@ Worktree: DEV/dhsplugins/dsh-voice/.worktrees/issue-18-plugin-tab-card
 ## Next Step
 Смог на staging (ждет согласования пользователя).
 
-### Phase 5: Deploy+smoke (Status: pending)
+### Phase 5: Deploy+smoke (Status: in_progress)
+- [x] release-0.8.0 PR #20 merged (main 4ea24b8)
+- [x] RELEASE copy synced, commit f9c9daa
+- [x] Staging unblocked (issue dsh-staging#24, tts->npm 0.3.2), voice 0.8.0 file:-install
+- [x] HTTP smoke passed (boot/client.js/status)
+- [ ] User visual check on :3082
+- [ ] Publish: Gitea tag v0.8.0, GitHub tag+release, npm publish
+- [ ] Prod profile -> npm 0.8.0, restart dsh-web, prod smoke
 - [ ] RELEASE-copy update -> staging install -> UI smoke -> publish version -> prod profile

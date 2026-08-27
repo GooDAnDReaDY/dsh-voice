@@ -149,7 +149,12 @@ The card has four blocks:
 - **Your own providers** — an OpenAI-compatible API per card: name, template,
   base URL, model, credential name. The name becomes selectable in both chains
   as soon as it is filled in.
-- **General** — local whisper endpoint, binary, model, autostart.
+- **General** — local whisper endpoint, binary, model, autostart, beep, localOnly,
+  microphone, custom vocabulary, offline polish endpoint (`polishBaseUrl`/`polishModel`/`polishKeyEnv`).
+- **Voice message** also has `polishSend` (polish the whole draft before sending) and
+  `sessionCommands` ("send", "cancel", "stop", "continue" act on the session instead of text).
+- **Dictation** also has a wake word: browser recognition starts recording when speech
+  begins with that phrase (empty disables it).
 
 Speed matters for dictation and accuracy for messages, which is why the chains
 are separate: a sensible pair is Deepgram → Groq → local for dictation and

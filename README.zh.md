@@ -76,6 +76,7 @@ graph LR
 * 🖥️ **本地 whisper.cpp 服务端直连**：自动管理 `whisper-server` 进程，结合 `ffmpeg` 实现实时音频转码。
 * ⚡ **SenseVoice-ONNX / Sherpa-ONNX** *(0.8.11)*：超快速（~50–100ms）非自回归本地语音识别引擎，自动清除情绪/事件标签。支持 Sherpa-ONNX HTTP 和 OpenAI 兼容端点。
 * 🌐 **实时音频流** *(0.8.11)*：低延迟 WebSocket 桥接（`/dsh-voice/realtime`），支持 OpenAI Realtime API 或本地 Sherpa-ONNX 流式传输。API 密钥安全保留在服务端。
+* 🌊 **Liquid Wave 与 Dynamic Orb 动态可视化** *(0.8.12)*：录音面板内的生动波形动态可视化，实时响应麦克风音量。可选平滑流动波浪、发光脉冲球体、经典频条或关闭。
 
 ---
 

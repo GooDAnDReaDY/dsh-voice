@@ -76,6 +76,7 @@ graph LR
 * 🖥️ **Offline Local Whisper Server**: Automatically boots and manages [whisper.cpp](https://github.com/ggerganov/whisper.cpp) (`whisper-server`) with on-the-fly `ffmpeg` transcode.
 * ⚡ **SenseVoice-ONNX / Sherpa-ONNX** *(0.8.11)*: Ultra-fast (~50–100ms) non-autoregressive local STT engine with automatic emotion/event tag stripping. Supports both Sherpa-ONNX HTTP and OpenAI-compatible endpoints.
 * 🌐 **Realtime Audio Streaming** *(0.8.11)*: Low-latency WebSocket bridge (`/dsh-voice/realtime`) for OpenAI Realtime API or local Sherpa-ONNX streaming. API keys stay securely on the host.
+* 🌊 **Liquid Wave & Dynamic Orb Visualizer** *(0.8.12)*: Smooth animated audio visualization in the recording pill with real-time mic volume reactivity. Switch between organic multi-layer liquid waves, pulsating radiant orb, classic bars, or off.
 
 ---
 

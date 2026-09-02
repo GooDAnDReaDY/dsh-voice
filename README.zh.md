@@ -74,6 +74,8 @@ graph LR
 * 📊 **服务商延迟与健康监控看板**：在设置界面实时掌握每个语音引擎的延迟（毫秒）、成功率与调用状态。
 * 🔒 **API 密钥安全隔离**：密钥由服务端 `ctx.credentials` 统一解析，绝不向浏览器前端泄漏。
 * 🖥️ **本地 whisper.cpp 服务端直连**：自动管理 `whisper-server` 进程，结合 `ffmpeg` 实现实时音频转码。
+* ⚡ **SenseVoice-ONNX / Sherpa-ONNX** *(0.8.11)*：超快速（~50–100ms）非自回归本地语音识别引擎，自动清除情绪/事件标签。支持 Sherpa-ONNX HTTP 和 OpenAI 兼容端点。
+* 🌐 **实时音频流** *(0.8.11)*：低延迟 WebSocket 桥接（`/dsh-voice/realtime`），支持 OpenAI Realtime API 或本地 Sherpa-ONNX 流式传输。API 密钥安全保留在服务端。
 
 ---
 
@@ -97,6 +99,7 @@ graph LR
 | `groq` | Groq Whisper | `whisper-large-v3-turbo` | `GROQ_API_KEY` | 毫秒级极速推理 |
 | `hf` | HuggingFace Inference | `openai/whisper-large-v3` | `HF_TOKEN` | 经典高精度开源模型 |
 | `local-whisper` | 本地 whisper.cpp | 启动参数指定 | *无需密钥* | 100% 离线私密运行 |
+| `sensevoice` | SenseVoice-ONNX / Sherpa-ONNX | `SenseVoiceSmall` | *无需密钥* | 超快速（~50ms）本地非自回归 STT |
 
 ---
 

@@ -74,6 +74,8 @@ graph LR
 * 📊 **Дашборд задержки и здоровья провайдеров**: мониторинг скорости ответа (мс), процента успешных транскрипций и ошибок в реальном времени.
 * 🔒 **Безопасность API-ключей**: ключи читаются на сервере через `ctx.credentials` и никогда не попадают в браузер клиента.
 * 🖥️ **Автозапуск локального whisper.cpp**: управление жизненным циклом `whisper-server` с авто-конвертацией через `ffmpeg`.
+* ⚡ **SenseVoice-ONNX / Sherpa-ONNX** *(0.8.11)*: сверхбыстрый (~50–100мс) неавторегрессивный локальный STT с автоматической очисткой тегов эмоций/событий. Поддержка Sherpa-ONNX HTTP и OpenAI-совместимых эндпоинтов.
+* 🌐 **Потоковое аудио в реальном времени** *(0.8.11)*: низколатентный WebSocket-мост (`/dsh-voice/realtime`) для OpenAI Realtime API или локального Sherpa-ONNX. API-ключи остаются на хосте.
 
 ---
 
@@ -100,6 +102,7 @@ graph LR
 | `groq` | Groq Whisper | `whisper-large-v3-turbo` | `GROQ_API_KEY` | Мгновенная скорость генерации |
 | `hf` | HuggingFace Inference | `openai/whisper-large-v3` | `HF_TOKEN` | Высокоточный облачный Whisper |
 | `local-whisper` | Локальный whisper.cpp | из параметров сервера | *Не требуется* | 100% приватность, оффлайн, без интернета |
+| `sensevoice` | SenseVoice-ONNX / Sherpa-ONNX | `SenseVoiceSmall` | *Не требуется* | Сверхбыстрый (~50мс) локальный неавторегрессивный STT |
 
 ### 🚀 Готовые пресеты (Plug & Play)
 
@@ -158,7 +161,9 @@ dsh plugin --profile web add @goodandready/dsh-voice
 
 ### Внутренние HTTP эндпоинты
 * `POST /dsh-voice/transcribe` — `{ dataBase64, mimeType, mode }` → `{ ok, text, provider, tookMs }`
-* `GET /dsh-voice/status` — возвращает состояние демона whisper и активные цепочки.
+* `POST /dsh-voice/polish` — `{ text }` → `{ ok, text }`
+* `GET /dsh-voice/status` — состояние демонов, цепочки, конфигурация SenseVoice и реалтайма.
+* `GET /dsh-voice/realtime` — **WebSocket upgrade** для низколатентного аудио-стриминга (OpenAI Realtime API / Sherpa-ONNX). Принимает бинарные аудио-чанки, возвращает JSON-дельты текста.
 
 ---
 

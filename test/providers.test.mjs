@@ -18,8 +18,9 @@ function depsWith(fetchImpl, key = 'secret') {
 }
 
 test('экспортирует все встроенные ключи и модели по умолчанию', () => {
-  assert.deepEqual(PROVIDER_KEYS, ['browser', 'deepgram', 'groq', 'hf', 'local-whisper'])
+  assert.deepEqual(PROVIDER_KEYS, ['browser', 'deepgram', 'groq', 'hf', 'local-whisper', 'sensevoice'])
   assert.equal(DEFAULT_MODELS.groq, 'whisper-large-v3-turbo')
+  assert.equal(DEFAULT_MODELS.sensevoice, 'SenseVoiceSmall')
 })
 
 test('browser на хосте не выполняется, а вежливо уступает следующему', async () => {

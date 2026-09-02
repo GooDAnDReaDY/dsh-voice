@@ -125,6 +125,23 @@ test('local-whisper перегоняет не-WAV в WAV перед отправ
   assert.equal(sentType, 'audio/wav')
 })
 
+test('local-whisper sends auto and disables translation for auto language', async () => {
+  let sentLanguage = ''
+  let sentTranslate = ''
+  const fetchImpl = async (_url, init) => {
+    sentLanguage = init.body.get('language')
+    sentTranslate = init.body.get('translate')
+    return { ok: true, json: async () => ({ text: 'olá mundo' }) }
+  }
+  const providers = makeProviders(depsWith(fetchImpl), {
+    bytes, mime: 'audio/wav', lang: 'auto', signal: undefined, models: {},
+  })
+  const out = await providers['local-whisper']()
+  assert.equal(out.text, 'olá mundo')
+  assert.equal(sentLanguage, 'auto')
+  assert.equal(sentTranslate, 'false')
+})
+
 test('local-whisper не трогает WAV и не зовёт конвертер', async () => {
   const fetchImpl = async () => ({ ok: true, json: async () => ({ text: 'ок' }) })
   const deps = depsWith(fetchImpl)

@@ -75,3 +75,11 @@ test('mergeContextVocabulary устойчива к null и undefined', () => {
   assert.deepEqual(mergeContextVocabulary(null, null), [])
   assert.deepEqual(mergeContextVocabulary(['test'], null), ['test'])
 })
+
+test('createStatsTracker.get() возвращает сериализуемый объект', () => {
+  const tracker = createStatsTracker()
+  const data = tracker.get()
+  assert.equal(typeof data, 'object')
+  assert.deepEqual(data, {})
+  assert.equal(JSON.stringify(data), '{}')
+})

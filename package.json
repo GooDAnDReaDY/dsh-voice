@@ -1,6 +1,6 @@
 {
   "name": "@goodandready/dsh-voice",
-  "version": "0.8.15",
+  "version": "0.8.16",
   "description": "Voice input for DeepSeek Harness: dictation chunked by pauses and voice messages, each with its own provider fallback chain (Deepgram, Groq, HuggingFace, local whisper.cpp, plus any OpenAI-compatible API of your own).",
   "license": "MIT",
   "type": "module",

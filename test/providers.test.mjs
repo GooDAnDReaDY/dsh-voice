@@ -48,6 +48,23 @@ test('deepgram подставляет выбранную модель в URL', a
   assert.match(seenUrl, /model=nova-3/)
 })
 
+test('deepgram использует настраиваемый deepgramBaseUrl', async () => {
+  let seenUrl = ''
+  const fetchImpl = async (url) => {
+    seenUrl = String(url)
+    return { ok: true, json: async () => ({ results: { channels: [{ alternatives: [{ transcript: 'self-hosted' }] }] } }) }
+  }
+  const deps = depsWith(fetchImpl)
+  deps.cfg.deepgramBaseUrl = 'https://deepgram.corp.internal/'
+  const providers = makeProviders(deps, {
+    bytes, mime: 'audio/webm', lang: 'ru', signal: undefined, models: {},
+  })
+  const out = await providers.deepgram()
+  assert.equal(out.ok, true)
+  assert.equal(out.text, 'self-hosted')
+  assert.ok(seenUrl.startsWith('https://deepgram.corp.internal/v1/listen'))
+})
+
 test('groq кладёт выбранную модель в форму', async () => {
   let seenModel = ''
   const fetchImpl = async (_url, init) => {
@@ -123,6 +140,23 @@ test('local-whisper перегоняет не-WAV в WAV перед отправ
   assert.equal(converted, true)
   assert.equal(sentName, 'audio.wav')
   assert.equal(sentType, 'audio/wav')
+})
+
+test('local-whisper sends auto and disables translation for auto language', async () => {
+  let sentLanguage = ''
+  let sentTranslate = ''
+  const fetchImpl = async (_url, init) => {
+    sentLanguage = init.body.get('language')
+    sentTranslate = init.body.get('translate')
+    return { ok: true, json: async () => ({ text: 'olá mundo' }) }
+  }
+  const providers = makeProviders(depsWith(fetchImpl), {
+    bytes, mime: 'audio/wav', lang: 'auto', signal: undefined, models: {},
+  })
+  const out = await providers['local-whisper']()
+  assert.equal(out.text, 'olá mundo')
+  assert.equal(sentLanguage, 'auto')
+  assert.equal(sentTranslate, 'false')
 })
 
 test('local-whisper не трогает WAV и не зовёт конвертер', async () => {

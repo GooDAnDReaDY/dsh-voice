@@ -25,6 +25,14 @@ test('wordsToDigits: русские числа словами', () => {
   assert.equal(wordsToDigits('один миллион'), '1000000')
 })
 
+test('wordsToDigits: не искажает обычные русские слова с корнями числительных', () => {
+  assert.equal(wordsToDigits('Это просто хорошая история'), 'Это просто хорошая история')
+  assert.equal(wordsToDigits('деревянный стол на кухне'), 'деревянный стол на кухне')
+  assert.equal(wordsToDigits('моя родина и одинокий остров'), 'моя родина и одинокий остров')
+  assert.equal(wordsToDigits('красная смородина'), 'красная смородина')
+  assert.equal(wordsToDigits('чистота и порядок'), 'чистота и порядок')
+})
+
 test('normalizePhrase: полный цикл', () => {
   assert.equal(normalizePhrase('привет мир, это тест', { capSentences: true, commaSpacing: true, trailingPeriod: true }),
     'Привет мир, это тест.')

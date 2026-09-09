@@ -39,7 +39,9 @@
     "url": "https://github.com/GooDAnDReaDY/dsh-voice/issues"
   },
   "scripts": {
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "build:client": "node scripts/build-client.mjs",
+    "pretest": "node scripts/build-client.mjs"
   },
   "dsh": {
     "bundle": {

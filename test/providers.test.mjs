@@ -17,23 +17,23 @@ function depsWith(fetchImpl, key = 'secret') {
   }
 }
 
-test('экспортирует все встроенные ключи и модели по умолчанию', () => {
+test('exports all built-in keys and default models', () => {
   assert.deepEqual(PROVIDER_KEYS, ['browser', 'deepgram', 'groq', 'hf', 'local-whisper', 'sensevoice'])
   assert.equal(DEFAULT_MODELS.groq, 'whisper-large-v3-turbo')
   assert.equal(DEFAULT_MODELS.sensevoice, 'SenseVoiceSmall')
 })
 
-test('browser на хосте не выполняется, а вежливо уступает следующему', async () => {
+test('browser does not run on the host and yields to the next provider', async () => {
   const providers = makeProviders(depsWith(async () => { throw new Error('сеть трогать не должны') }), {
     bytes, mime: 'audio/webm', lang: 'ru', signal: undefined, models: {},
   })
   const out = await providers.browser()
   assert.equal(out.ok, false)
   assert.equal(out.provider, 'browser')
-  assert.match(out.reason, /в браузере/)
+  assert.match(out.reason, /recognition runs in the page/)
 })
 
-test('deepgram подставляет выбранную модель в URL', async () => {
+test('deepgram puts the chosen model into the URL', async () => {
   let seenUrl = ''
   const fetchImpl = async (url) => {
     seenUrl = String(url)
@@ -48,7 +48,7 @@ test('deepgram подставляет выбранную модель в URL', a
   assert.match(seenUrl, /model=nova-3/)
 })
 
-test('deepgram использует настраиваемый deepgramBaseUrl', async () => {
+test('deepgram uses configurable deepgramBaseUrl', async () => {
   let seenUrl = ''
   const fetchImpl = async (url) => {
     seenUrl = String(url)
@@ -65,7 +65,7 @@ test('deepgram использует настраиваемый deepgramBaseUrl',
   assert.ok(seenUrl.startsWith('https://deepgram.corp.internal/v1/listen'))
 })
 
-test('groq кладёт выбранную модель в форму', async () => {
+test('groq puts the chosen model into the form', async () => {
   let seenModel = ''
   const fetchImpl = async (_url, init) => {
     seenModel = init.body.get('model')
@@ -79,7 +79,7 @@ test('groq кладёт выбранную модель в форму', async ()
   assert.equal(seenModel, 'whisper-large-v3')
 })
 
-test('hf подставляет модель в путь URL', async () => {
+test('hf puts the model into the URL path', async () => {
   let seenUrl = ''
   const fetchImpl = async (url) => { seenUrl = String(url); return { ok: true, json: async () => ({ text: 'ок' }) } }
   const providers = makeProviders(depsWith(fetchImpl), {
@@ -89,7 +89,7 @@ test('hf подставляет модель в путь URL', async () => {
   assert.match(seenUrl, /models\/openai\/whisper-small$/)
 })
 
-test('без ключа провайдер отказывает, а не бросает', async () => {
+test('missing key makes the provider refuse instead of throwing', async () => {
   const deps = depsWith(async () => { throw new Error('не должно вызываться') }, '')
   const providers = makeProviders(deps, { bytes, mime: 'audio/webm', lang: 'ru', signal: undefined, models: {} })
   const out = await providers.deepgram()
@@ -97,7 +97,7 @@ test('без ключа провайдер отказывает, а не бро�
   assert.match(out.reason, /DEEPGRAM_API_KEY/)
 })
 
-test('пустой транскрипт помечается как отказ', async () => {
+test('empty transcript is marked as refusal', async () => {
   const fetchImpl = async () => ({ ok: true, json: async () => ({ text: '   ' }) })
   const providers = makeProviders(depsWith(fetchImpl), {
     bytes, mime: 'audio/webm', lang: 'ru', signal: undefined, models: {},
@@ -107,7 +107,7 @@ test('пустой транскрипт помечается как отказ',
   assert.equal(out.reason, 'empty transcript')
 })
 
-test('local-whisper читает ошибку из тела ответа, а не бросает', async () => {
+test('local-whisper reads the error from the response body', async () => {
   const fetchImpl = async () => ({ ok: false, status: 400, json: async () => ({ error: 'failed to decode media' }) })
   const deps = depsWith(fetchImpl)
   deps.toWav = async () => new Uint8Array([9, 9, 9])
@@ -120,7 +120,7 @@ test('local-whisper читает ошибку из тела ответа, а н�
 })
 
 // whisper.cpp принимает только WAV: на webm его сервер отвечает Invalid request.
-test('local-whisper перегоняет не-WAV в WAV перед отправкой', async () => {
+test('local-whisper converts non-WAV to WAV before sending', async () => {
   let sentName = ''
   let sentType = ''
   const fetchImpl = async (_url, init) => {
@@ -159,7 +159,7 @@ test('local-whisper sends auto and disables translation for auto language', asyn
   assert.equal(sentTranslate, 'false')
 })
 
-test('local-whisper не трогает WAV и не зовёт конвертер', async () => {
+test('local-whisper leaves WAV alone and skips the converter', async () => {
   const fetchImpl = async () => ({ ok: true, json: async () => ({ text: 'ок' }) })
   const deps = depsWith(fetchImpl)
   deps.toWav = async () => { throw new Error('конвертер не должен вызываться для WAV') }
@@ -170,7 +170,7 @@ test('local-whisper не трогает WAV и не зовёт конверте�
   assert.equal(out.ok, true)
 })
 
-test('без конвертера не-WAV даёт понятный отказ, а не падение', async () => {
+test('missing converter makes non-WAV refuse clearly instead of crashing', async () => {
   const fetchImpl = async () => { throw new Error('не должно дойти до сети') }
   const providers = makeProviders(depsWith(fetchImpl), {
     bytes, mime: 'audio/webm', lang: 'ru', signal: undefined, models: {},
@@ -208,11 +208,11 @@ const OR = {
   prompt: '',
 }
 
-test('экспортирует оба шаблона своих провайдеров', () => {
+test('exports both custom provider templates', () => {
   assert.deepEqual(CUSTOM_TEMPLATES, ['openai-transcriptions', 'openai-chat-audio'])
 })
 
-test('свой провайдер попадает в карту под своим именем', () => {
+test('custom provider enters the map under its own name', () => {
   const providers = makeProviders(customDeps(async () => ({}), OR), {
     bytes, mime: 'audio/wav', lang: 'ru', signal: undefined, models: {},
   })
@@ -220,7 +220,7 @@ test('свой провайдер попадает в карту под свои
   assert.deepEqual(Object.keys(providers).slice(0, PROVIDER_KEYS.length), PROVIDER_KEYS)
 })
 
-test('шаблон transcriptions шлёт multipart на {baseURL}/audio/transcriptions', async () => {
+test('transcriptions template posts multipart to {baseURL}/audio/transcriptions', async () => {
   let seen = {}
   const fetchImpl = async (url, init) => {
     seen = { url: String(url), model: init.body.get('model'), lang: init.body.get('language'), auth: init.headers.authorization }
@@ -241,7 +241,7 @@ test('шаблон transcriptions шлёт multipart на {baseURL}/audio/transc
   assert.equal(seen.auth, 'Bearer secret')
 })
 
-test('шаблон chat-audio кладёт аудио в input_audio и читает ответ чата', async () => {
+test('chat-audio template puts audio into input_audio and reads the chat reply', async () => {
   let body = null
   const fetchImpl = async (url, init) => {
     assert.equal(String(url), 'https://openrouter.ai/api/v1/chat/completions')
@@ -262,7 +262,7 @@ test('шаблон chat-audio кладёт аудио в input_audio и чита
   assert.match(parts[0].text, /language is ru/)
 })
 
-test('chat-audio перегоняет webm в WAV, потому что такого формата API не берёт', async () => {
+test('chat-audio converts webm to WAV because the API rejects that format', async () => {
   let converted = false
   const wav = new Uint8Array([9, 9, 9])
   const fetchImpl = async (_url, init) => {
@@ -278,7 +278,7 @@ test('chat-audio перегоняет webm в WAV, потому что тако�
   assert.equal(converted, true)
 })
 
-test('chat-audio не трогает mp3 и не зовёт конвертер', async () => {
+test('chat-audio leaves mp3 alone and skips the converter', async () => {
   let converted = false
   const fetchImpl = async (_url, init) => {
     assert.equal(JSON.parse(init.body).messages[0].content[1].input_audio.format, 'mp3')
@@ -290,7 +290,7 @@ test('chat-audio не трогает mp3 и не зовёт конвертер',
   assert.equal(converted, false)
 })
 
-test('модель из цепочки перекрывает модель провайдера', async () => {
+test('chain model overrides the provider model', async () => {
   let seenModel = ''
   const fetchImpl = async (_url, init) => {
     seenModel = JSON.parse(init.body).model
@@ -303,7 +303,7 @@ test('модель из цепочки перекрывает модель пр�
   assert.equal(seenModel, 'openai/gpt-4o-audio-preview')
 })
 
-test('свой провайдер не может перекрыть встроенного', () => {
+test('a custom provider cannot override a built-in engine', () => {
   const spec = { key: 'groq', template: 'openai-transcriptions', baseURL: 'https://evil.example', model: 'x' }
   const providers = makeProviders(customDeps(async () => ({}), spec), {
     bytes, mime: 'audio/wav', lang: 'ru', signal: undefined, models: {},
@@ -311,7 +311,7 @@ test('свой провайдер не может перекрыть встро�
   assert.equal(providers.groq.name, 'groq')
 })
 
-test('неполное описание своего провайдера даёт отказ, а не падение', async () => {
+test('incomplete custom provider refuses instead of crashing', async () => {
   const cases = [
     [{ key: 'a', template: 'openai-transcriptions', baseURL: '', model: 'm' }, /no baseURL/],
     [{ key: 'a', template: 'openai-transcriptions', baseURL: 'https://x', model: '' }, /no model/],
@@ -326,7 +326,7 @@ test('неполное описание своего провайдера даё
   }
 })
 
-test('без ключа свой провайдер отказывает с именем ключа', async () => {
+test('custom provider without a key refuses naming the key', async () => {
   const providers = makeProviders(customDeps(async () => ({}), OR, { key: '' }), {
     bytes, mime: 'audio/wav', lang: 'ru', signal: undefined, models: {},
   })
@@ -335,7 +335,7 @@ test('без ключа свой провайдер отказывает с им
   assert.equal(out.reason, 'no OPENROUTER_KEY')
 })
 
-test('ошибка HTTP у своего провайдера становится отказом цепочки', async () => {
+test('custom provider HTTP error becomes a chain refusal', async () => {
   const fetchImpl = async () => ({ ok: false, status: 429 })
   const providers = makeProviders(customDeps(fetchImpl, OR), {
     bytes, mime: 'audio/wav', lang: 'ru', signal: undefined, models: {},
@@ -347,7 +347,7 @@ test('ошибка HTTP у своего провайдера становитс�
 
 // -------------------------------------------------------------- заготовки
 
-test('заготовки доступны без единой строчки настроек', async () => {
+test('presets work with zero settings lines', async () => {
   let seen = ''
   const fetchImpl = async (url, init) => {
     seen = String(url)
@@ -362,7 +362,7 @@ test('заготовки доступны без единой строчки н�
   assert.equal(seen, 'https://api.openai.com/v1/audio/transcriptions')
 })
 
-test('у каждой заготовки заполнено всё, что нужно для работы', () => {
+test('every preset has everything required to work', () => {
   for (const key of PRESET_KEYS) {
     const preset = PRESET_PROVIDERS[key]
     assert.ok(preset.baseURL.startsWith('https://'), key + ': адрес')
@@ -372,15 +372,15 @@ test('у каждой заготовки заполнено всё, что ну�
   }
 })
 
-test('у OpenRouter чат-шаблон, потому что обычного эндпоинта у него нет', () => {
+test('OpenRouter uses the chat template because it has no transcriptions endpoint', () => {
   assert.equal(PRESET_PROVIDERS.openrouter.template, 'openai-chat-audio')
 })
 
-test('известные имена — это встроенные плюс заготовки', () => {
+test('known names are built-ins plus presets', () => {
   assert.deepEqual(KNOWN_KEYS, PROVIDER_KEYS.concat(PRESET_KEYS))
 })
 
-test('своё описание перекрывает заготовку целиком', async () => {
+test('a custom spec fully replaces a preset', async () => {
   let seen = ''
   const fetchImpl = async (url) => { seen = String(url); return { ok: true, json: async () => ({ text: 'своё' }) } }
   const spec = {
@@ -395,7 +395,7 @@ test('своё описание перекрывает заготовку цел
   assert.equal(seen, 'https://свой-шлюз.local/v1/audio/transcriptions')
 })
 
-test('встроенный движок своим описанием не перекрыть', async () => {
+test('a custom spec cannot replace a built-in engine', async () => {
   const spec = { key: 'groq', template: 'openai-transcriptions', baseURL: 'https://evil.example', model: 'x' }
   const providers = makeProviders(customDeps(async () => ({}), spec), {
     bytes, mime: 'audio/wav', lang: 'ru', signal: undefined, models: {},

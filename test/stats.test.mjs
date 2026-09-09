@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { runChain } from '../lib/chain.js'
 import { createStatsTracker, mergeContextVocabulary } from '../lib/stats.js'
 
-test('runChain вызывает onAttempt для успешного провайдера', async () => {
+test('runChain calls onAttempt for a successful provider', async () => {
   const attempts = []
   const onAttempt = (provider, res) => attempts.push({ provider, ...res })
   const providers = {
@@ -17,7 +17,7 @@ test('runChain вызывает onAttempt для успешного провай
   assert.ok(typeof attempts[0].tookMs === 'number')
 })
 
-test('runChain вызывает onAttempt при отказе и исключении в цепочке', async () => {
+test('runChain calls onAttempt on chain refusal and exception', async () => {
   const attempts = []
   const onAttempt = (provider, res) => attempts.push({ provider, ...res })
   const providers = {
@@ -38,7 +38,7 @@ test('runChain вызывает onAttempt при отказе и исключе�
   assert.equal(attempts[2].ok, true)
 })
 
-test('createStatsTracker аккумулирует успехи, ошибки и среднюю задержку', () => {
+test('createStatsTracker accumulates successes, failures and average latency', () => {
   const tracker = createStatsTracker()
   tracker.record('groq', { ok: true, tookMs: 100 })
   tracker.record('groq', { ok: true, tookMs: 200 })
@@ -56,14 +56,14 @@ test('createStatsTracker аккумулирует успехи, ошибки и 
   assert.ok(stats.groq.lastErrorAt > 0)
 })
 
-test('mergeContextVocabulary объединяет базовый словарь с контекстными терминами', () => {
+test('mergeContextVocabulary merges base vocabulary with context terms', () => {
   const base = ['Cordis', 'DeepSeek']
   const context = ['Cordis', 'React', 'useState', 'a', '', 'PostgreSQL']
   const merged = mergeContextVocabulary(base, context, 10)
   assert.deepEqual(merged, ['Cordis', 'DeepSeek', 'React', 'useState', 'PostgreSQL'])
 })
 
-test('mergeContextVocabulary соблюдает лимит maxWords', () => {
+test('mergeContextVocabulary respects maxWords', () => {
   const base = ['w1', 'w2']
   const context = ['w3', 'w4', 'w5', 'w6']
   const merged = mergeContextVocabulary(base, context, 4)
@@ -71,12 +71,12 @@ test('mergeContextVocabulary соблюдает лимит maxWords', () => {
   assert.deepEqual(merged, ['w1', 'w2', 'w3', 'w4'])
 })
 
-test('mergeContextVocabulary устойчива к null и undefined', () => {
+test('mergeContextVocabulary tolerates null and undefined', () => {
   assert.deepEqual(mergeContextVocabulary(null, null), [])
   assert.deepEqual(mergeContextVocabulary(['test'], null), ['test'])
 })
 
-test('createStatsTracker.get() возвращает сериализуемый объект', () => {
+test('createStatsTracker.get() returns a serializable object', () => {
   const tracker = createStatsTracker()
   const data = tracker.get()
   assert.equal(typeof data, 'object')

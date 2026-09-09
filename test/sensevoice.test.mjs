@@ -16,7 +16,7 @@ function depsWith(fetchImpl, extra = {}) {
   }
 }
 
-test('sensevoice отправляет WAV на sherpa-onnx endpoint и возвращает чистый текст', async () => {
+test('sensevoice posts WAV to the sherpa-onnx endpoint and returns clean text', async () => {
   let seenUrl = ''
   let seenBody = null
   const fetchImpl = async (url, init) => {
@@ -44,7 +44,7 @@ test('sensevoice отправляет WAV на sherpa-onnx endpoint и возв�
   assert.ok(seenBody.has('file'))
 })
 
-test('sensevoice очищает токены эмоций и звуковых событий SenseVoice', async () => {
+test('sensevoice strips SenseVoice emotion and event tokens', async () => {
   const fetchImpl = async () => ({
     ok: true,
     json: async () => ({ text: '<|zh|><|NEUTRAL|><|Speech|><|withitn|>Тестовая фраза<|HAPPY|>' }),
@@ -63,7 +63,7 @@ test('sensevoice очищает токены эмоций и звуковых с
   assert.equal(out.text, 'Тестовая фраза')
 })
 
-test('sensevoice перегоняет не-WAV в WAV через toWav', async () => {
+test('sensevoice converts non-WAV to WAV via toWav', async () => {
   let toWavCalled = false
   const deps = depsWith(
     async () => ({ ok: true, json: async () => ({ text: 'конвертировано' }) }),
@@ -89,7 +89,7 @@ test('sensevoice перегоняет не-WAV в WAV через toWav', async (
   assert.equal(out.text, 'конвертировано')
 })
 
-test('sensevoice поддерживает OpenAI-совместимый эндпоинт', async () => {
+test('sensevoice supports the OpenAI-compatible endpoint', async () => {
   let seenModel = ''
   const fetchImpl = async (url, init) => {
     seenModel = init.body.get('model')
@@ -116,7 +116,7 @@ test('sensevoice поддерживает OpenAI-совместимый эндп
   assert.equal(out.text, 'openai format')
 })
 
-test('sensevoice возвращает понятный отказ при HTTP ошибке', async () => {
+test('sensevoice returns a clear refusal on HTTP error', async () => {
   const fetchImpl = async () => ({
     ok: false,
     status: 503,

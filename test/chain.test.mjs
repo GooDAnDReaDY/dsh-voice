@@ -6,7 +6,7 @@ const ok = (name, text) => async () => ({ ok: true, provider: name, text })
 const fail = (name, reason) => async () => ({ ok: false, provider: name, reason })
 const boom = (msg) => async () => { throw new Error(msg) }
 
-test('берёт первого успешного и не трогает остальных', async () => {
+test('takes the first success and does not touch the rest', async () => {
   let touched = false
   const out = await runChain(['a', 'b'], {
     a: ok('a', 'привет'),
@@ -17,7 +17,7 @@ test('берёт первого успешного и не трогает ост
   assert.equal(touched, false)
 })
 
-test('переходит к следующему при отказе и при исключении', async () => {
+test('falls through on refusal and on exception', async () => {
   const out = await runChain(['a', 'b', 'c'], {
     a: fail('a', 'no key'),
     b: boom('HTTP 429'),
@@ -26,19 +26,19 @@ test('переходит к следующему при отказе и при �
   assert.equal(out.provider, 'c')
 })
 
-test('пропускает провайдеров, которых нет в таблице', async () => {
+test('skips providers missing from the table', async () => {
   const out = await runChain(['нет-такого', 'a'], { a: ok('a', 'ок') })
   assert.equal(out.provider, 'a')
 })
 
-test('падает с перечислением причин, когда легли все', async () => {
+test('fails listing reasons when all providers fail', async () => {
   await assert.rejects(
     () => runChain(['a', 'b'], { a: fail('a', 'no key'), b: boom('HTTP 500') }),
     (err) => err.message.includes('no key') && err.message.includes('HTTP 500'),
   )
 })
 
-test('пустой транскрипт считается отказом', async () => {
+test('empty transcript counts as refusal', async () => {
   const out = await runChain(['a', 'b'], {
     a: async () => ({ ok: false, provider: 'a', reason: 'empty transcript' }),
     b: ok('b', 'текст'),

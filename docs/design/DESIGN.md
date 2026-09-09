@@ -50,6 +50,9 @@
 
 ## Locked Design Decisions
 - 2026-09-09 — settings stay a plugin card (`settings.plugin.item`), not a sidebar section; reason: flat sidebar is a shared scarce resource.
+- 2026-09-09 — Changed in v0.8.19: inline `ru` locale dictionary removed; English is the only source dictionary. Users who want Russian UI must install the translation plugin. Reason: authoring contract and drift control. Condition to revisit: product decision to re-bundle locales per plugin.
+- 2026-09-09 — Changed in v0.8.19: visualizer paints from DSH theme tokens (no hardcoded hex accents). Reason: light/dark correctness.
+- 2026-09-09 — Changed in v0.8.19: style tags use `data-dsh-plugin="dsh-voice"`. Reason: survive neighbour-plugin HMR cleanup.
 - 2026-09-09 — English is the only inline locale dictionary; Russian and other languages come from the translation plugin; reason: authoring contract, avoid drift.
 - 2026-09-09 — visualizer colors read theme tokens at draw time; reason: light/dark correctness.
 - 2026-09-09 — client remains a single ModuleLoader entry (`lib/client.js`); optional source fragments may be concatenated by `scripts/build-client.mjs` if introduced; reason: harness loads one client file.

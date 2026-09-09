@@ -80,6 +80,22 @@ graph LR
 
 ---
 
+## 📝 0.8.19 更新说明
+
+v0.8.18 质量审查后的修复批次（Gitea #79–#87，PR #88）：
+
+- 设置占位提示在**渲染时**通过 locale 解析，不再冻结为 i18n key（#79）
+- `whisperModel` / `sensevoiceModel` 使用模型路径提示（#82）
+- 可视化器改用 DSH 主题 token，不再硬编码颜色（#80）
+- 样式标签使用 `data-dsh-plugin="dsh-voice"`，避免邻居插件 HMR 清理误删（#81）
+- 源码语言统一为英文；界面不再内置完整 `ru` 词典（#85）
+- 浏览器端源码拆分为 `lib/client-src/*.js`，由 `npm run build:client` 构建（#87）
+
+> [!IMPORTANT]
+> **v0.8.19 语言说明：** 未安装 translation 插件时，Web UI 保持英文。
+
+---
+
 ## 🎮 四种语音输入方式
 
 | 交互模式 | 触发手势 | 行为效果 |

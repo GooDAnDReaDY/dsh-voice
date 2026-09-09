@@ -80,6 +80,26 @@ graph LR
 
 ---
 
+## 📝 What's New in 0.8.19
+
+Quality batch after the v0.8.18 review (Gitea #79–#87, PR #88):
+
+| Area | Change |
+|------|--------|
+| Settings placeholders | Model/path hints resolve through locale at **render time** — no frozen i18n keys (#79) |
+| Model field hints | `whisperModel` / `sensevoiceModel` show path-to-model copy, not binary-autostart hints (#82) |
+| Visualizer | Liquid wave / dynamic orb read **DSH theme tokens** instead of hardcoded hex (#80) |
+| Style isolation | Injected CSS uses `data-dsh-plugin="dsh-voice"` so neighbour HMR cleanup cannot strip styles (#81) |
+| Source language | Code comments, errors, and tests are English; EN edit-command phrases added. Spoken RU STT patterns remain for recognition (#86) |
+| Locales | **Changed:** the full inline `ru` dictionary was removed. English is the only bundled locale. Install the translation plugin for Russian UI (#85) |
+| Client source | Browser client is built from ordered `lib/client-src/*.js` fragments via `npm run build:client` (#87) |
+| Process docs | Added `docs/design/DESIGN.md`, `index.md`, project `AGENTS.md`, `docs/testing/unit.md` (#83) |
+
+> [!IMPORTANT]
+> **v0.8.19 locale behavior:** without a translation plugin the Web UI stays in English. Session/edit **spoken** command phrases still match Russian speech for STT where documented; interface labels do not ship a second dictionary.
+
+---
+
 ## 🎮 Four Ways to Speak
 
 | Mode | Gesture / Trigger | Behavior |

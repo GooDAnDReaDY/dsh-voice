@@ -25,3 +25,5 @@ DeepSeek Harness plugin: host STT proxy + browser recording/composer UI.
 ## Release
 - Follow DSH plugin release workflow; production only after test-server cycle and explicit owner OK.
 - Version bump of `z` only unless the owner asks otherwise.
+- Rebuild `lib/client.js` via `npm run build:client` (or `npm test`) before packing; never hand-edit the built file.
+- Inline locale dictionaries other than English are forbidden; translation plugin owns non-EN UI.

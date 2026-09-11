@@ -57,4 +57,3 @@
 - 2026-09-09 — visualizer colors read theme tokens at draw time; reason: light/dark correctness.
 - 2026-09-09 — client remains a single ModuleLoader entry (`lib/client.js`); optional source fragments may be concatenated by `scripts/build-client.mjs` if introduced; reason: harness loads one client file.
 - 2026-09-10 — Changed in v0.8.20: adopt dsh-clinebot unified styling baseline for settings card: .cb-page, .cb-section-card, .cb-badge (with live latency ping), structured panels, and React ErrorBoundary wrapper for robust error containment.
-- 2026-09-10 — Changed in v0.8.20: adopt dsh-clinebot unified styling baseline for settings card: .cb-page, .cb-section-card, .cb-badge (with live latency ping), structured panels, and React ErrorBoundary wrapper for robust error containment.

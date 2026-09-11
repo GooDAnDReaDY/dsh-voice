@@ -5,9 +5,10 @@ Voice input plugin for DeepSeek Harness: dictation and voice messages with provi
 ## Paths
 - DEV: repository root of `@goodandready/dsh-voice`
 - Package: `@goodandready/dsh-voice`
-- Host entry: `lib/index.js`
+- Host entry: `lib/index.js` (cordis glue)
+- Host pure modules (unit-testable, no cordis): `lib/http-util.js`, `lib/polish.js`, `lib/transcribe-core.js`, `lib/providers.js`, `lib/chain.js`
 - Browser entry (built artifact): `lib/client.js` (`window.__ModuleLoader__.load`)
-- Browser source fragments: `lib/client-src/*.js` (edit these, not the built file)
+- Browser source fragments: `lib/client-src/*.js` (edit these, not the built file). Settings split: `70-settings-base`, `71-chains`, `72-voice-section`, `73-plugin-card`.
 - Client build: `scripts/build-client.mjs` via `npm run build:client` (also `pretest`)
 - Bundle patch: `cordis.patch.yml` (`name` must stay the full package name)
 
@@ -18,10 +19,12 @@ Voice input plugin for DeepSeek Harness: dictation and voice messages with provi
 ## Test matrix
 | Check | Command |
 |-------|---------|
-| Unit tests | `npm test` (`node --test test/*.test.mjs`; rebuilds client first) |
+| Unit + behavioral tests | `npm test` (`node --test test/*.test.mjs`; rebuilds client first) |
+| Host route/polish/abort tests | `node --test test/host-routes.test.mjs` (no harness, no network) |
 | Client rebuild only | `npm run build:client` |
 | Pack size gate | `npm pack --dry-run` — every file < 250 KiB practical / 262144 B hard |
 | Name identity | `package.json` name == `cordis.patch.yml` name == client loader `id` |
+| Client fragment size | every `lib/client-src/*.js` stays under 800 lines |
 
 ## Build / publish
 - Browser client source lives in `lib/client-src/*.js` (ordered fragments).

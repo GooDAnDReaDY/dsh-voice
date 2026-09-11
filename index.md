@@ -12,7 +12,7 @@ Voice input plugin for DeepSeek Harness: dictation and voice messages with provi
 - Bundle patch: `cordis.patch.yml` (`name` must stay the full package name)
 
 ## Status
-- Version: see `package.json` (`0.8.19` — quality batch release)
+- Version: see `package.json` (SoT; currently `0.8.22`). Do not hardcode the version here — read package.json.
 - Quality batch: issues #79–#87, PR #88 (settings/visualizer fixes, EN source, client split, docs)
 
 ## Test matrix

@@ -116,6 +116,7 @@ function polishDeps(overrides = {}) {
     fetchImpl: async () => { throw new Error('fetch should not be called') },
     getConfig: () => ({ polishBaseUrl: '', polishModel: '', polishProvider: 'p', polishModelId: 'm' }),
     llm: null,
+    createUserMessage: (payload) => payload,
     getAgentDefaultModel: () => null,
     ...overrides,
   }
@@ -199,9 +200,27 @@ test('polish LLM failure returns raw text (documented fallback)', async () => {
     },
     getAgentDefaultModel: () => null,
   }))
-  // createUserMessage import will fail without peer deps installed; either
-  // path must still yield the raw text.
   assert.equal(await polish('draft', { polish: true }, undefined), 'draft')
+})
+
+test('polish harness LLM success returns cleaned streamed text', async () => {
+  let seenArgs = null
+  const polish = createPolishText(polishDeps({
+    getConfig: () => ({ polishBaseUrl: '', polishProvider: 'prov', polishModelId: 'model-1' }),
+    llm: {
+      async *stream(args) {
+        seenArgs = args
+        yield { type: 'text-delta', text: 'pol' }
+        yield { type: 'text-delta', text: 'ished' }
+      },
+    },
+  }))
+  const ctrl = new AbortController()
+  const out = await polish('draft', { polish: true }, ctrl.signal)
+  assert.equal(out, 'polished')
+  assert.equal(seenArgs.provider, 'prov')
+  assert.equal(seenArgs.model, 'model-1')
+  assert.equal(seenArgs.signal, ctrl.signal)
 })
 
 test('polish empty LLM stream returns raw text', async () => {

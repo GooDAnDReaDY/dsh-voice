@@ -402,3 +402,50 @@ test('a custom spec cannot replace a built-in engine', async () => {
   })
   assert.equal(providers.groq.name, 'groq')
 })
+
+test('providers handle invalid JSON gracefully and return a clear refusal', async () => {
+  const brokenJsonFetch = async () => ({
+    ok: true,
+    json: async () => { throw new SyntaxError('Unexpected token < in JSON at position 0') },
+  })
+
+  const providers = makeProviders(depsWith(brokenJsonFetch), {
+    bytes, mime: 'audio/wav', lang: 'ru', signal: undefined, models: {},
+  })
+
+  const dg = await providers.deepgram()
+  assert.equal(dg.ok, false)
+  assert.equal(dg.provider, 'deepgram')
+  assert.ok(dg.reason.includes('invalid JSON response'), dg.reason)
+
+  const gq = await providers.groq()
+  assert.equal(gq.ok, false)
+  assert.equal(gq.provider, 'groq')
+  assert.ok(gq.reason.includes('invalid JSON response'), gq.reason)
+
+  const h = await providers.hf()
+  assert.equal(h.ok, false)
+  assert.equal(h.provider, 'hf')
+  assert.ok(h.reason.includes('invalid JSON response'), h.reason)
+
+  const lw = await providers['local-whisper']()
+  assert.equal(lw.ok, false)
+  assert.equal(lw.provider, 'local-whisper')
+  assert.ok(lw.reason.includes('invalid JSON response'), lw.reason)
+})
+
+test('custom providers handle invalid JSON gracefully and return a refusal', async () => {
+  const brokenJsonFetch = async () => ({
+    ok: true,
+    json: async () => { throw new SyntaxError('Unexpected token < in JSON at position 0') },
+  })
+  const spec = { key: 'customstt', template: 'openai-transcriptions', baseURL: 'https://proxy.example', model: 'model-1', keyEnv: 'MY_KEY' }
+  const providers = makeProviders(customDeps(brokenJsonFetch, spec), {
+    bytes, mime: 'audio/wav', lang: 'ru', signal: undefined, models: {},
+  })
+
+  const res = await providers.customstt()
+  assert.equal(res.ok, false)
+  assert.equal(res.provider, 'customstt')
+  assert.ok(res.reason.includes('invalid JSON response'), res.reason)
+})

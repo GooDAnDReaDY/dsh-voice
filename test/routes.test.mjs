@@ -19,6 +19,7 @@ test("lib/client.js contains unified clinebot design classes and ErrorBoundary",
   assert.ok(content.includes("createErrorBoundary"), "has createErrorBoundary helper");
   assert.ok(content.includes("/dsh-voice/status"), "fetches /dsh-voice/status");
   assert.ok(content.includes("AbortController"), "uses AbortController for fetch timeout");
+  assert.ok(content.includes(".dvo-wave{flex:1;min-width:0;max-width:100%"), "prevents canvas overflow with min-width:0 and max-width:100%");
 });
 
 test("lib/index.js registers correct routes and tool names", () => {

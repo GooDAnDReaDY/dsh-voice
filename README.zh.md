@@ -21,6 +21,16 @@
   <a href="README.zh.md"><b>🇨🇳 中文说明</b></a>
 </p>
 
+<table align="center">
+  <tr>
+    <td align="center">
+      ⭐ <strong>如果您喜欢这个插件，请在 GitHub 上为它点亮 Star</strong> — 这能让我知道插件对您有用，并鼓励我继续开发和维护它。
+      <br><br>
+      🐛 <strong>如果您发现 Bug 或希望增加功能</strong>，请使用任意语言在 GitHub 上提交 Issue — 我会评估您的建议，并在后续版本中实现有价值的改进。
+    </td>
+  </tr>
+</table>
+
 </div>
 
 ---

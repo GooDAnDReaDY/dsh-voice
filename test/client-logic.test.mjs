@@ -102,3 +102,36 @@ test('client bundle lib/client.js builds and loads into ModuleLoader cleanly', a
   assert.equal(typeof mod.apply, 'function')
   assert.deepEqual(mod.inject, ['timer', 'slots', 'settingsScope', 'locale'])
 })
+
+test('noise gate threshold math and gating logic', () => {
+  function computeGateLevel(raw, gateDb) {
+    if (gateDb > -90) {
+      const gateAmp = Math.pow(10, gateDb / 20) * 2.2
+      if (raw < gateAmp) return 0
+    }
+    return raw
+  }
+
+  // -45 dB standard default threshold: 10^(-45/20) * 2.2 ~= 0.01237
+  const ambientHiss = 0.008
+  const humanSpeech = 0.25
+
+  assert.equal(computeGateLevel(ambientHiss, -45), 0, 'ambient hiss below -45 dB must be cut to 0')
+  assert.equal(computeGateLevel(humanSpeech, -45), humanSpeech, 'human speech above -45 dB must pass through')
+
+  // When disabled (e.g. -999 dB), even low background noise passes through
+  assert.equal(computeGateLevel(ambientHiss, -999), ambientHiss, 'gate disabled must pass all levels')
+})
+
+test('package.json packaging hygiene strictly excludes lib/client-src and includes multilingual docs', async () => {
+  const pkgRaw = await readFile(path.join(root, 'package.json'), 'utf8')
+  const pkg = JSON.parse(pkgRaw)
+
+  assert.ok(Array.isArray(pkg.files), 'package.json must specify files whitelist')
+  assert.ok(pkg.files.includes('lib/*.js'), 'files must include lib/*.js')
+  assert.ok(!pkg.files.includes('lib/'), 'files must NOT include recursive lib/ directory')
+  assert.ok(pkg.files.includes('README.md'), 'files must include README.md')
+  assert.ok(pkg.files.includes('README.zh.md'), 'files must include README.zh.md')
+  assert.ok(pkg.files.includes('README.ru.md'), 'files must include README.ru.md')
+})
+

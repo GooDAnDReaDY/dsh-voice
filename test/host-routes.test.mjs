@@ -94,15 +94,22 @@ test('localOnly without local-whisper in the chain throws a clear error', () => 
 
 // ---------- sessionCommand ----------
 
-test('sessionCommand matches send/cancel/stop/continue in ru and en', () => {
+test('sessionCommand matches send/cancel/stop/continue in ru, en and zh', () => {
   assert.equal(sessionCommand('send'), 'send')
   assert.equal(sessionCommand('Отправь!'), 'send')
+  assert.equal(sessionCommand('发送'), 'send')
+  assert.equal(sessionCommand('发出去!'), 'send')
   assert.equal(sessionCommand('отмена'), 'cancel')
   assert.equal(sessionCommand('Cancel'), 'cancel')
+  assert.equal(sessionCommand('取消'), 'cancel')
+  assert.equal(sessionCommand('算了'), 'cancel')
   assert.equal(sessionCommand('стоп'), 'stop')
   assert.equal(sessionCommand('STOP.'), 'stop')
+  assert.equal(sessionCommand('停止'), 'stop')
+  assert.equal(sessionCommand('暂停!'), 'stop')
   assert.equal(sessionCommand('продолжи'), 'continue')
   assert.equal(sessionCommand('  continue  '), 'continue')
+  assert.equal(sessionCommand('继续'), 'continue')
   assert.equal(sessionCommand('hello world'), null)
   assert.equal(sessionCommand(''), null)
   assert.equal(sessionCommand(null), null)

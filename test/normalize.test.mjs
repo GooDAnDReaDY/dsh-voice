@@ -21,6 +21,7 @@ test('ensureTrailingPeriod: trailing period', () => {
 test('wordsToDigits: Russian number words', () => {
   assert.equal(wordsToDigits('сто двадцать пять рублей'), '125 рублей')
   assert.equal(wordsToDigits('двадцать один'), '21')
+  assert.equal(wordsToDigits('одно сообщение'), '1 сообщение')
   assert.equal(wordsToDigits('тысяча двести'), '1200')
   assert.equal(wordsToDigits('один миллион'), '1000000')
 })

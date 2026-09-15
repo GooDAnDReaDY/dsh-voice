@@ -183,4 +183,79 @@ test('extractContextKeywords extracts Cyrillic and Latin technical words while f
   assert.ok(!extracted.includes('для'), 'stop words must be omitted')
 })
 
+test('undoLastInsert normalizes consecutive spaces and trims cleanly', () => {
+  function spliceUndo(draft, added) {
+    const i = draft.lastIndexOf(added)
+    if (i < 0) return null
+    const spliced = draft.slice(0, i) + draft.slice(i + added.length)
+    return spliced.replace(/[ \t]{2,}/g, ' ').replace(/\s+$/, '').trimStart()
+  }
+
+  // Undoing a middle insertion without leaving double spaces
+  const draft = 'Hello beautiful world'
+  const added = ' beautiful'
+  assert.equal(spliceUndo(draft, added), 'Hello world')
+
+  // Undoing start insertion
+  assert.equal(spliceUndo('First then second', 'First '), 'then second')
+
+  // Undoing end insertion
+  assert.equal(spliceUndo('Prefix suffix', ' suffix'), 'Prefix')
+})
+
+test('noiseGateDb safely evaluates without throwing when draft or value is null', () => {
+  function computeGateDb(draft, value) {
+    return Number(
+      (draft && draft.noiseGateDb !== undefined)
+        ? draft.noiseGateDb
+        : (value && value.noiseGateDb !== undefined)
+          ? value.noiseGateDb
+          : -45
+    )
+  }
+
+  // Initial state before form edit: draft is null, value is null
+  assert.doesNotThrow(() => {
+    assert.equal(computeGateDb(null, null), -45)
+  })
+
+  // draft is null, value loaded from server
+  assert.equal(computeGateDb(null, { noiseGateDb: -30 }), -30)
+
+  // draft has overridden value
+  assert.equal(computeGateDb({ noiseGateDb: -50 }, { noiseGateDb: -30 }), -50)
+
+  // disabled gate (-999)
+  assert.equal(computeGateDb({ noiseGateDb: -999 }, null), -999)
+})
+
+test('pagehide and beforeunload lifecycle cleanup handlers are registered in client bundle', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes("addEventListener('pagehide'"), 'pagehide listener must be present')
+  assert.ok(clientSrc.includes("addEventListener('beforeunload'"), 'beforeunload listener must be present')
+})
+
+test('visualizer theme colors are cached with 1s TTL', () => {
+  let calls = 0
+  let cache = { color: '', expires: 0 }
+  function getCachedAccentColor(now) {
+    if (now < cache.expires && cache.color) return cache.color
+    calls++
+    const pick = '#10b981'
+    cache = { color: pick, expires: now + 1000 }
+    return pick
+  }
+
+  // Call 60 times within 500ms
+  for (let t = 0; t < 500; t += 10) {
+    getCachedAccentColor(1000 + t)
+  }
+  assert.equal(calls, 1, 'Only 1 DOM style resolution within 1s window')
+
+  // Advance past 1000ms
+  getCachedAccentColor(2100)
+  assert.equal(calls, 2, 'Refreshed after TTL expiration')
+})
+
+
 

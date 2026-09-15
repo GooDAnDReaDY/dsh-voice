@@ -32,4 +32,16 @@ test("lib/index.js registers correct routes and tool names", () => {
   assert.ok(content.includes("path: '/dsh-voice/transcribe'"), "registers /dsh-voice/transcribe route");
   assert.ok(content.includes("name: 'transcribe_audio'"), "registers transcribe_audio tool");
   assert.ok(content.includes("kind: 'exact'"), "registers route kinds as exact");
+  assert.ok(content.includes("noiseGateDb: cfg.noiseGateDb"), "status route emits noiseGateDb");
 });
+
+test("toWav16k rejects immediately when signal is already aborted", async () => {
+  const { toWav16k } = await import("../lib/wav.js");
+  const controller = new AbortController();
+  controller.abort();
+  await assert.rejects(
+    () => toWav16k(Buffer.from([0, 1, 2, 3]), "ffmpeg", controller.signal),
+    /aborted/
+  );
+});
+

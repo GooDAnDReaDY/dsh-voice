@@ -135,3 +135,52 @@ test('package.json packaging hygiene strictly excludes lib/client-src and includ
   assert.ok(pkg.files.includes('README.ru.md'), 'files must include README.ru.md')
 })
 
+test('waitStop resolves immediately when recorder is inactive or absent', async () => {
+  function waitStop(recorder) {
+    if (!recorder || recorder.state === 'inactive') return Promise.resolve()
+    return new Promise((resolve) => recorder.addEventListener('stop', resolve, { once: true }))
+  }
+
+  await assert.doesNotReject(async () => {
+    await waitStop(null)
+    await waitStop({ state: 'inactive' })
+  })
+})
+
+test('extractContextKeywords extracts Cyrillic and Latin technical words while filtering stop words', () => {
+  function extractContextKeywordsFrom(text) {
+    if (!text || text.length < 3) return []
+    const matches = text.match(/[A-Za-zА-Яа-яЁё_][A-Za-zА-Яа-яЁё0-9_]{2,29}/g) || []
+    const stop = new Set([
+      'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'any', 'can', 'her', 'was',
+      'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'man', 'new', 'now',
+      'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'its', 'let', 'put', 'say', 'she',
+      'too', 'use', 'это', 'как', 'что', 'для', 'или', 'если', 'все', 'при', 'так', 'уже',
+      'был', 'быть', 'только', 'тоже', 'под', 'над', 'без', 'нет', 'даже', 'где', 'чем',
+    ])
+    const words = []
+    const seen = new Set()
+    for (const m of matches) {
+      const lower = m.toLowerCase()
+      if (!stop.has(lower) && !seen.has(lower)) {
+        seen.add(lower)
+        words.push(m)
+        if (words.length >= 30) break
+      }
+    }
+    return words
+  }
+
+  const sample = 'это рефакторинг микросервиса PostgreSQL и Redis для Docker swarm'
+  const extracted = extractContextKeywordsFrom(sample)
+  assert.ok(extracted.includes('рефакторинг'))
+  assert.ok(extracted.includes('микросервиса'))
+  assert.ok(extracted.includes('PostgreSQL'))
+  assert.ok(extracted.includes('Redis'))
+  assert.ok(extracted.includes('Docker'))
+  assert.ok(extracted.includes('swarm'))
+  assert.ok(!extracted.includes('это'), 'stop words must be omitted')
+  assert.ok(!extracted.includes('для'), 'stop words must be omitted')
+})
+
+

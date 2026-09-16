@@ -33,6 +33,10 @@ test("lib/index.js registers correct routes and tool names", () => {
   assert.ok(content.includes("name: 'transcribe_audio'"), "registers transcribe_audio tool");
   assert.ok(content.includes("kind: 'exact'"), "registers route kinds as exact");
   assert.ok(content.includes("noiseGateDb: cfg.noiseGateDb"), "status route emits noiseGateDb");
+  assert.ok(content.includes("whisperRunning: whisperOk"), "status route emits whisperRunning");
+  assert.ok(content.includes("whisperError: whisperOk ? null : whisperError"), "status route emits whisperError");
+  assert.ok(content.includes("sensevoiceRunning: sensevoiceOk"), "status route emits sensevoiceRunning");
+  assert.ok(content.includes("sensevoiceError: sensevoiceOk ? null : sensevoiceError"), "status route emits sensevoiceError");
 });
 
 test("toWav16k rejects immediately when signal is already aborted", async () => {

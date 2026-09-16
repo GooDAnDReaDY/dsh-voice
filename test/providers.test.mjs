@@ -449,3 +449,63 @@ test('custom providers handle invalid JSON gracefully and return a refusal', asy
   assert.equal(res.provider, 'customstt')
   assert.ok(res.reason.includes('invalid JSON response'), res.reason)
 })
+
+test('provider-http helpers: isAutoLang, chatAudioFormat, fileName', async () => {
+  const { isAutoLang, chatAudioFormat, fileName } = await import('../lib/provider-http.js')
+
+  assert.equal(isAutoLang(''), true)
+  assert.equal(isAutoLang('auto'), true)
+  assert.equal(isAutoLang('ru,en'), true)
+  assert.equal(isAutoLang('ru'), false)
+  assert.equal(isAutoLang('en'), false)
+
+  assert.equal(chatAudioFormat('audio/wav'), 'wav')
+  assert.equal(chatAudioFormat('audio/mp3'), 'mp3')
+  assert.equal(chatAudioFormat('audio/mpeg'), 'mp3')
+  assert.equal(chatAudioFormat('audio/webm'), '')
+
+  assert.equal(fileName('audio/wav'), 'audio.wav')
+  assert.equal(fileName('audio/ogg'), 'audio.ogg')
+  assert.equal(fileName('audio/mp4'), 'audio.m4a')
+  assert.equal(fileName('audio/webm'), 'audio.webm')
+})
+
+test('provider-http helpers: safeJson and readErrorDetail', async () => {
+  const { safeJson, readErrorDetail } = await import('../lib/provider-http.js')
+
+  const validRes = { json: async () => ({ status: 'ok' }) }
+  const parsed = await safeJson(validRes, 'Test')
+  assert.deepEqual(parsed, { status: 'ok' })
+
+  const invalidRes = { json: async () => { throw new SyntaxError('not json') } }
+  await assert.rejects(() => safeJson(invalidRes, 'Test'), /Test: invalid JSON response/)
+
+  const errObjRes = {
+    status: 400,
+    json: async () => ({ error: { message: 'model not found' } }),
+  }
+  const detailObj = await readErrorDetail(errObjRes, 'Service')
+  assert.equal(detailObj, 'Service model not found')
+
+  const errStrRes = {
+    status: 401,
+    json: async () => ({ error: 'unauthorized' }),
+  }
+  const detailStr = await readErrorDetail(errStrRes, 'Service')
+  assert.equal(detailStr, 'Service unauthorized')
+
+  const errMsgRes = {
+    status: 403,
+    json: async () => ({ message: 'quota exceeded' }),
+  }
+  const detailMsg = await readErrorDetail(errMsgRes, 'Service')
+  assert.equal(detailMsg, 'Service quota exceeded')
+
+  const notJsonRes = {
+    status: 502,
+    json: async () => { throw new Error('html bad gateway') },
+  }
+  const detailFallback = await readErrorDetail(notJsonRes, 'Service')
+  assert.equal(detailFallback, 'Service HTTP 502')
+})
+

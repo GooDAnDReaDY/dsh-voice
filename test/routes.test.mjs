@@ -61,4 +61,25 @@ test("package name is consistently '@goodandready/dsh-voice' across all surfaces
   assert.ok(clientContent.includes("id: '@goodandready/dsh-voice'"), "lib/client.js plugin id must match package name");
 });
 
+test("lib/client.js adheres to zero hardcoded colors rule (no rgba, no hex literals)", () => {
+  const clientPath = path.join(rootDir, "lib", "client.js");
+  const content = fs.readFileSync(clientPath, "utf8");
+  const rgbaMatches = content.match(/rgba\(/g) || [];
+  const hexMatches = content.match(/#[0-9a-fA-F]{6}/g) || [];
+  assert.equal(rgbaMatches.length, 0, "must have zero rgba( color occurrences");
+  assert.equal(hexMatches.length, 0, "must have zero 6-digit hex color occurrences");
+});
+
+test("lib/client.js includes core chevron primitive with fallback and accessible composer pill", () => {
+  const clientPath = path.join(rootDir, "lib", "client.js");
+  const content = fs.readFileSync(clientPath, "utf8");
+
+  assert.ok(content.includes("IconChevronDownOutline14"), "queries IconChevronDownOutline14 from primitives");
+  assert.ok(content.includes("dvo-chev-icon"), "renders chevron icon with fallback class");
+  assert.ok(content.includes("aria-live"), "pill status uses aria-live polite");
+  assert.ok(content.includes("role: 'region'"), "pill uses role region");
+  assert.ok(content.includes("focusComposer"), "focusComposer returns focus after cancel/stop");
+});
+
+
 

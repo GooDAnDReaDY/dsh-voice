@@ -1,11 +1,11 @@
-import { test } from 'node:test'
+import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readBody, writeJson } from '../lib/http-util.js'
+import { readBody, writeJson, isLoopback, isTrustedCaller } from '../lib/http-util.js'
 import { createPolishText } from '../lib/polish.js'
 import { buildProviderOrder, sessionCommand } from '../lib/transcribe-core.js'
 import { mockReq, mockRes, jsonBody } from './helpers/mock-http.mjs'
 
-// ---------- readBody / writeJson ----------
+// ---------- readBody / writeJson / isTrustedCaller ----------
 
 test('readBody resolves concatenated chunks', async () => {
   const req = mockReq('POST', 'hello')
@@ -38,6 +38,67 @@ test('writeJson swallows closed-socket errors', () => {
     end() { throw new Error('socket hang up') },
   }
   assert.doesNotThrow(() => writeJson(res, 200, { ok: true }))
+})
+
+test('isLoopback identifies 127.0.0.1, ::1, and ipv6-mapped ipv4', () => {
+  assert.equal(isLoopback('127.0.0.1'), true)
+  assert.equal(isLoopback('::1'), true)
+  assert.equal(isLoopback('::ffff:127.0.0.1'), true)
+  assert.equal(isLoopback('localhost'), true)
+  assert.equal(isLoopback('192.168.1.50'), false)
+  assert.equal(isLoopback('8.8.8.8'), false)
+  assert.equal(isLoopback(''), false)
+  assert.equal(isLoopback(null), false)
+})
+
+test('isTrustedCaller permits loopback and validated same-origin callers, rejects cross-origin', () => {
+  // 1. Loopback remote address -> allowed
+  assert.equal(isTrustedCaller({ socket: { remoteAddress: '127.0.0.1' }, headers: {} }), true)
+  assert.equal(isTrustedCaller({ socket: { remoteAddress: '::1' }, headers: {} }), true)
+
+  // 2. Same-origin via sec-fetch-site -> allowed
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '192.168.1.150' },
+    headers: { 'sec-fetch-site': 'same-origin', host: 'example.com:3080' },
+  }), true)
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '192.168.1.150' },
+    headers: { 'sec-fetch-site': 'same-site', host: 'example.com:3080' },
+  }), true)
+
+  // 3. Matching origin -> allowed
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '10.0.0.2' },
+    headers: { origin: 'http://dsh.local:3080', host: 'dsh.local:3080' },
+  }), true)
+
+  // 4. Matching referer -> allowed
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '10.0.0.2' },
+    headers: { referer: 'http://dsh.local:3080/chat', host: 'dsh.local:3080' },
+  }), true)
+
+  // 5. Cross-site sec-fetch-site -> rejected
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '192.168.1.150' },
+    headers: { 'sec-fetch-site': 'cross-site', host: 'example.com' },
+  }), false)
+
+  // 6. Mismatched origin -> rejected
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '192.168.1.150' },
+    headers: { origin: 'https://evil-site.com', host: 'example.com' },
+  }), false)
+
+  // 7. Non-loopback request with no origin/sec-fetch headers -> rejected (fail-closed)
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '192.168.1.150' },
+    headers: { host: 'example.com' },
+  }), false)
+
+  // 8. Null/undefined req -> false
+  assert.equal(isTrustedCaller(null), false)
+  assert.equal(isTrustedCaller({}), false)
 })
 
 // ---------- buildProviderOrder / localOnly ----------

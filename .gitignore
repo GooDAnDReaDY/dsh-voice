@@ -25,3 +25,11 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Internal planning, guidelines & testing notes (issue #120)
+.planning/
+docs/plans/
+docs/testing/
+AGENTS.md
+index.md
+

@@ -45,3 +45,20 @@ test("toWav16k rejects immediately when signal is already aborted", async () => 
   );
 });
 
+test("package name is consistently '@goodandready/dsh-voice' across all surfaces", () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, "package.json"), "utf8"));
+  assert.equal(pkg.name, "@goodandready/dsh-voice");
+
+  const cordisPatch = fs.readFileSync(path.join(rootDir, "cordis.patch.yml"), "utf8");
+  assert.ok(cordisPatch.includes("name: '@goodandready/dsh-voice'"), "cordis.patch.yml must match package name");
+
+  const indexPath = path.join(rootDir, "lib", "index.js");
+  const indexContent = fs.readFileSync(indexPath, "utf8");
+  assert.ok(indexContent.includes("export const name = '@goodandready/dsh-voice'"), "lib/index.js export const name must match package name");
+
+  const clientPath = path.join(rootDir, "lib", "client.js");
+  const clientContent = fs.readFileSync(clientPath, "utf8");
+  assert.ok(clientContent.includes("id: '@goodandready/dsh-voice'"), "lib/client.js plugin id must match package name");
+});
+
+

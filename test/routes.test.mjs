@@ -37,6 +37,8 @@ test("lib/index.js registers correct routes and tool names", () => {
   assert.ok(content.includes("whisperError: whisperOk ? null : whisperError"), "status route emits whisperError");
   assert.ok(content.includes("sensevoiceRunning: sensevoiceOk"), "status route emits sensevoiceRunning");
   assert.ok(content.includes("sensevoiceError: sensevoiceOk ? null : sensevoiceError"), "status route emits sensevoiceError");
+  assert.ok(content.includes("export const NS = 'dsh-voice'"), "exports canonical NS");
+  assert.ok(content.includes("sctx.settings.register(NS, Config"), "registers settings with canonical NS");
 });
 
 test("toWav16k rejects immediately when signal is already aborted", async () => {

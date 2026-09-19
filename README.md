@@ -84,9 +84,33 @@ graph LR
 * 📊 **Provider Latency & Health Dashboard**: Live visual telemetry of provider latency (ms), success rates, and errors directly within the settings UI.
 * 🔒 **Zero API Key Leakage**: Keys are resolved on the host via `ctx.credentials` (`credentialRef`) and never transmitted to browser clients.
 * 🖥️ **Offline Local Whisper Server**: Automatically boots and manages [whisper.cpp](https://github.com/ggerganov/whisper.cpp) (`whisper-server`) with on-the-fly `ffmpeg` transcode.
-* ⚡ **SenseVoice-ONNX / Sherpa-ONNX** *(0.8.11)*: Ultra-fast (~50–100ms) non-autoregressive local STT engine with automatic emotion/event tag stripping. Supports both Sherpa-ONNX HTTP and OpenAI-compatible endpoints.
+* ⚡ **SenseVoice-ONNX / Sherpa-ONNX** *(0.8.11, updated 0.8.32)*: Ultra-fast (~50–100ms) non-autoregressive local STT engine with 1-click automatic model installation to `~/.dsh/models/sensevoice`.
+* 🎙️ **Gated Turn-Taking & Echo Prevention** *(0.8.32)*: Automatically mutes the mic while the assistant is speaking (`dsh:tts:start`/`stop`) and supports speech-triggered Barge-In.
+* 👻 **Live Ghost Interim Preview** *(0.8.32)*: Visual real-time preview of spoken words before final chunk transcription.
+* ⏱️ **SVG Silence Ring Timer** *(0.8.32)*: Circular animated countdown indicator in the composer dock during the pending message delay.
+* 🗣️ **Hands-free Voice Actions** *(0.8.32)*: Spoken commands ("send", "cancel", "clear", "new line") trigger UI actions directly.
+* 🧩 **Structured Prompt Voice Selection** *(0.8.32)*: Spoken options automatically select buttons in interactive assistant choice prompts.
+* 📖 **Developer Lexicon & IT Jargon Correction** *(0.8.32)*: Phonetic normalization for developer slang (GitHub, Docker, Kubernetes, pnpm) with customizable settings dictionary.
 * 🌐 **Realtime Audio Streaming** *(0.8.11)*: Low-latency WebSocket bridge (`/dsh-voice/realtime`) for OpenAI Realtime API or local Sherpa-ONNX streaming. API keys stay securely on the host.
 * 🌊 **Liquid Wave & Dynamic Orb Visualizer** *(0.8.12)*: Smooth animated audio visualization in the recording pill with real-time mic volume reactivity. Switch between organic multi-layer liquid waves, pulsating radiant orb, classic bars, or off.
+
+---
+
+## 📝 What's New in 0.8.32
+
+10-point feature epic & SenseVoice 1-Click Installer (Issue #129):
+
+| Area | Feature | Description |
+|------|---------|-------------|
+| Local ASR | **1-Click SenseVoice-Small** | Automated download and extraction of `model.int8.onnx` and `tokens.txt` directly to `~/.dsh/models/sensevoice` via host loopback endpoint. |
+| Turn-Taking | **Gated Mode** | Microphone input is muted when assistant audio starts (`dsh:tts:start`) and unmuted on `dsh:tts:stop`, eliminating acoustic feedback. |
+| Interruption | **Barge-In** | Speaking immediately signals assistant TTS to pause and abort current speech playback. |
+| Feedback | **Ghost Interim Preview** | Semi-transparent live text preview in composer pill during recognition before sentence finalizing. |
+| Countdown | **SVG Silence Ring** | Circular SVG progress ring visually ticking down pending auto-send delay. |
+| Control | **Hands-free Actions** | Spoken control words ("send", "cancel", "clear", "new line") trigger actions instead of becoming message text. |
+| Prompts | **Structured Prompts** | Spoken replies automatically match and submit options in active harness interactive prompts. |
+| Vocabulary | **IT Jargon Normalizer** | Auto-corrects spoken developer slang to canonical spelling (GitHub, Docker, Kubernetes, etc.) with custom dictionary in Settings. |
+| Configuration | **Individual Toggles** | Dedicated switches for every enhancement in Settings card with native `--dsw-alias-*` token styling. |
 
 ---
 

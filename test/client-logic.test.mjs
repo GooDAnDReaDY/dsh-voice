@@ -257,5 +257,17 @@ test('visualizer theme colors are cached with 1s TTL', () => {
   assert.equal(calls, 2, 'Refreshed after TTL expiration')
 })
 
-
-
+test('client bundle contains CSS classes and DOM handlers for voice enhancements', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('.dvo-silence-ring'), 'silence ring styles must be present')
+  assert.ok(clientSrc.includes('.dvo-ghost'), 'ghost preview styles must be present')
+  assert.ok(clientSrc.includes('.dvo-installer-box'), 'installer box styles must be present')
+  assert.ok(clientSrc.includes('.dvo-progress-bar'), 'progress bar styles must be present')
+  assert.ok(clientSrc.includes('dsh:tts:start'), 'TTS start event listener must be present')
+  assert.ok(clientSrc.includes('dsh:tts:stop'), 'TTS stop event listener must be present')
+  assert.ok(clientSrc.includes('gatedTurnTaking'), 'gatedTurnTaking setting must be wired')
+  assert.ok(clientSrc.includes('autoSendVisualRing'), 'autoSendVisualRing setting must be wired')
+  assert.ok(clientSrc.includes('liveInterimPreview'), 'liveInterimPreview setting must be wired')
+  assert.ok(clientSrc.includes('techJargonCorrection'), 'techJargonCorrection setting must be wired')
+  assert.ok(clientSrc.includes('structuredPromptVoice'), 'structuredPromptVoice setting must be wired')
+})

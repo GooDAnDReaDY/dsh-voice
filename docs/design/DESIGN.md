@@ -70,4 +70,13 @@
 - 2026-09-16 — Release pack size gate and lint script (#103): Added `npm run pack:check` enforcing the 250 KiB warning and 262144 bytes (256 KiB) hard block limit across all packaged files, and `npm run lint` verifying syntactic integrity (`node --check`) for all scripts and library files.
 - 2026-09-16 — Package dependency audit baseline (#104): Package maintains zero direct runtime `dependencies` and zero `devDependencies`. Peer dependencies (`@deepseek-ai/cordis`, `@deepseek-ai/dsh-tools`, `@deepseek-ai/dsh-credentials`) are audited and monitored for compatibility without unreviewed breaking bumps.
 - 2026-09-17 — Settings namespace isolation (#125): Host registers settings scope under canonical short namespace `NS = 'dsh-voice'` (matching client slot key and `~/.dsh/settings.yaml` configuration key), decoupling package identity (`export const name = '@goodandready/dsh-voice'`) from the UI settings registry. Ensures DSH UI `configurablePlugins` list matches and displays the settings card.
+- 2026-09-19 — Voice enhancements and 1-Click SenseVoice setup (#129):
+  - 1-Click SenseVoice installer (`lib/sensevoice-installer.js`): Automated on-demand download and extraction of SenseVoice-Small ONNX model (`model.int8.onnx`, `tokens.txt`) to `~/.dsh/models/sensevoice` via loopback endpoint `/dsh-voice/sensevoice-installer`.
+  - Turn-Taking and Barge-In coordination (`gatedTurnTaking`, `bargeIn`): Gated audio coordination muting the microphone when assistant audio plays (`dsh:tts:start` / `dsh:tts:stop`), with speech-triggered barge-in interruption.
+  - Live ghost text preview (`liveInterimPreview`): Semi-transparent live interim recognition preview within the composer recording pill.
+  - SVG Silence Ring timer (`autoSendVisualRing`): Circular countdown animation in the recording dock during pending auto-send state.
+  - Hands-free voice actions (`voiceActions`): Voice-triggered commands ("send", "cancel", "clear", "new line") that perform actions directly without being inserted as message text.
+  - Spoken interactive choice prompts (`structuredPromptVoice`): Spoken answers automatically matching and submitting buttons in active structured prompts.
+  - Developer lexicon correction (`techJargonCorrection`, `jargonDictionary`): Phonetic slang normalization (GitHub, Docker, Kubernetes, pnpm, etc.) with customizable user dictionary in the settings card.
+  - Granular control: All 10 features have dedicated toggle switches in the Settings Card, strictly styled with `--dsw-alias-*` tokens and zero hardcoded colors.
 

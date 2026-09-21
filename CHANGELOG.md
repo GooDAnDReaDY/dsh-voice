@@ -10,6 +10,7 @@ Notable changes to `@goodandready/dsh-voice`.
 - **Health checks no longer leave timers behind** when whisper.cpp or SenseVoice is down.
 - **Jargon replacements reuse compiled expressions** instead of building a new RegExp for every phrase.
 - **Docs no longer advertise `/dsh-voice/realtime`.** That WebSocket route is not implemented.
+- **GitHub mirror keeps `lib/*.js`.** The publication allowlist expands npm `files` globs, so the plugin sources are part of the sanitized tree.
 
 ## 0.8.33
 

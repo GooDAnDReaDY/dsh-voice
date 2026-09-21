@@ -91,11 +91,24 @@ done < <(git show "${gitea_ref:-origin/main}:package.json" | node -e '
     try{const p=JSON.parse(s);for(const f of (p.files||[])) console.log(f.replace(/\/\*\*$/,""));}catch(e){}
   });')
 
+glob_match() {
+  # npm "files" globs: * and ? stay inside one path segment.
+  python3 - "$1" "$2" <<'PY'
+import re, sys
+pat, path = sys.argv[1], sys.argv[2]
+if not any(ch in pat for ch in "*?["):
+    raise SystemExit(1)
+rx = "^" + "".join("[^/]*" if ch == "*" else "[^/]" if ch == "?" else re.escape(ch) for ch in pat) + "$"
+raise SystemExit(0 if re.match(rx, path) else 1)
+PY
+}
+
 is_allowed() {
   local path="$1" entry
   for entry in "${ALLOW[@]}"; do
     if [ "$path" = "$entry" ]; then return 0; fi
     case "$path" in "$entry"/*) return 0 ;; esac
+    if glob_match "$entry" "$path"; then return 0; fi
   done
   return 1
 }

@@ -1,5 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import {
   SENSEVOICE_MODEL_URL,
   SENSEVOICE_MODEL_MIRROR,
@@ -7,7 +10,8 @@ import {
   findModelFile,
   findTokensFile,
   getSensevoiceStatus,
-  registerSensevoiceInstaller
+  registerSensevoiceInstaller,
+  downloadArchive
 } from '../lib/sensevoice-installer.js'
 
 test('SENSEVOICE URLs are valid https links', () => {
@@ -39,10 +43,13 @@ test('registerSensevoiceInstaller registers route on ctx.webServer', () => {
   const registered = []
   const mockCtx = {
     webServer: {
-      register(opts) { registered.push(opts) }
+      register(opts) {
+        registered.push(opts)
+        return () => { registered.disposed = true }
+      }
     }
   }
-  registerSensevoiceInstaller(mockCtx, {
+  const dispose = registerSensevoiceInstaller(mockCtx, {
     liveConfig: () => ({}),
     isAlive: async () => false,
     updateConfig: async () => {},
@@ -51,4 +58,31 @@ test('registerSensevoiceInstaller registers route on ctx.webServer', () => {
 
   assert.equal(registered.length, 1)
   assert.equal(registered[0].path, '/dsh-voice/sensevoice-installer')
+  assert.equal(typeof dispose, 'function')
+  dispose()
+  assert.equal(registered.disposed, true)
+})
+
+test('downloadArchive writes the response body and closes the file', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'dsh-voice-sv-'))
+  const dest = path.join(dir, 'model.bin')
+  const payload = Buffer.from('sensevoice-bytes')
+  const previous = globalThis.fetch
+  globalThis.fetch = async () => ({
+    ok: true,
+    headers: { get: () => String(payload.length) },
+    body: new ReadableStream({
+      start(controller) {
+        controller.enqueue(payload)
+        controller.close()
+      },
+    }),
+  })
+  try {
+    await downloadArchive('https://example.invalid/model.tar.bz2', dest)
+    assert.equal((await readFile(dest)).toString(), 'sensevoice-bytes')
+  } finally {
+    globalThis.fetch = previous
+    await rm(dir, { recursive: true, force: true })
+  }
 })

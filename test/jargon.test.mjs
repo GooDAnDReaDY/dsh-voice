@@ -34,3 +34,10 @@ test('normalizePhrase applies jargon normalization when requested', () => {
   const res = normalizePhrase(input, { jargon: true, trailingPeriod: true })
   assert.equal(res, 'сделай PR на GitHub.')
 })
+
+test('applyJargonDictionary repeats the same phrase without a stuck global regex', () => {
+  const input = 'запушь этот коммит на гитхаб и запусти пайплайн в докер'
+  const expected = 'запушь этот commit на GitHub и запусти pipeline в Docker'
+  assert.equal(applyJargonDictionary(input), expected)
+  assert.equal(applyJargonDictionary(input), expected)
+})

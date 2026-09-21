@@ -149,7 +149,7 @@ test('localOnly without local-whisper in the chain throws a clear error', () => 
       knownKeys: KNOWN,
       defaultModels: MODELS,
     }),
-    /localOnly mode is on, but local-whisper is not in the chain/,
+    /localOnly mode is on, but no local engine \(local-whisper or sensevoice\) is in the chain/,
   )
 })
 

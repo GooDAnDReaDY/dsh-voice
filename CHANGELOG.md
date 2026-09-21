@@ -2,6 +2,15 @@
 
 Notable changes to `@goodandready/dsh-voice`.
 
+## 0.8.34
+
+### Fixed
+- **localOnly accepts SenseVoice.** A chain that uses only the local SenseVoice engine no longer fails closed with a whisper-only error.
+- **SenseVoice installer lifecycle.** The download waits for disk backpressure and closes the file if the transfer fails. Reloading the plugin removes the installer route.
+- **Health checks no longer leave timers behind** when whisper.cpp or SenseVoice is down.
+- **Jargon replacements reuse compiled expressions** instead of building a new RegExp for every phrase.
+- **Docs no longer advertise `/dsh-voice/realtime`.** That WebSocket route is not implemented.
+
 ## 0.8.33
 
 ### Fixed

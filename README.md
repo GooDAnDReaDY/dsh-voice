@@ -91,7 +91,6 @@ graph LR
 * 🗣️ **Hands-free Voice Actions** *(0.8.32)*: Spoken commands ("send", "cancel", "clear", "new line") trigger UI actions directly.
 * 🧩 **Structured Prompt Voice Selection** *(0.8.32)*: Spoken options automatically select buttons in interactive assistant choice prompts.
 * 📖 **Developer Lexicon & IT Jargon Correction** *(0.8.32)*: Phonetic normalization for developer slang (GitHub, Docker, Kubernetes, pnpm) with customizable settings dictionary.
-* 🌐 **Realtime Audio Streaming** *(0.8.11)*: Low-latency WebSocket bridge (`/dsh-voice/realtime`) for OpenAI Realtime API or local Sherpa-ONNX streaming. API keys stay securely on the host.
 * 🌊 **Liquid Wave & Dynamic Orb Visualizer** *(0.8.12)*: Smooth animated audio visualization in the recording pill with real-time mic volume reactivity. Switch between organic multi-layer liquid waves, pulsating radiant orb, classic bars, or off.
 
 ---
@@ -217,8 +216,7 @@ Registers `transcribe_audio(file_path, language?)` in `ctx.tools`, allowing agen
 ### Internal HTTP Endpoints
 * `POST /dsh-voice/transcribe` — `{ dataBase64, mimeType, mode }` → `{ ok, text, provider, tookMs }`
 * `POST /dsh-voice/polish` — `{ text }` → `{ ok, text }`
-* `GET /dsh-voice/status` — Returns daemon status, active chains, SenseVoice and realtime config.
-* `GET /dsh-voice/realtime` — **WebSocket upgrade** for low-latency audio streaming (OpenAI Realtime API / Sherpa-ONNX). Accepts binary audio chunks, returns JSON text deltas.
+* `GET /dsh-voice/status` — Returns daemon status, active chains, SenseVoice.
 
 ---
 

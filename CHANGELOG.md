@@ -2,6 +2,11 @@
 
 Notable changes to `@goodandready/dsh-voice`.
 
+## 0.8.36
+
+### Fixed
+- Settings no longer wait on the removed settingsScope service. The client uses configForms (#143).
+
 ## 0.8.35
 
 ### Fixed

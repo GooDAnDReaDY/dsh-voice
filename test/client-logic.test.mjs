@@ -100,7 +100,7 @@ test('client bundle lib/client.js builds and loads into ModuleLoader cleanly', a
   }))
   assert.ok(mod)
   assert.equal(typeof mod.apply, 'function')
-  assert.deepEqual(mod.inject, ['timer', 'slots', 'settingsScope', 'locale'])
+  assert.deepEqual(mod.inject, ['timer', 'slots', 'configForms', 'locale'])
 })
 
 test('noise gate threshold math and gating logic', () => {

@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import test from "node:test";
 import assert from "node:assert/strict";
 import { toWav16k } from "../lib/wav.js";
@@ -61,4 +62,11 @@ test("toWav16k rejects when ffmpeg exits with error on garbage data", async () =
     },
     /ffmpeg exit/
   );
+});
+
+test("toWav16k and extractTarBz2 pass windowsHide: true to child_process.spawn", async () => {
+  const wavSource = await readFile(new URL("../lib/wav.js", import.meta.url), "utf8");
+  assert.match(wavSource, /spawn\(\s*ffmpegBin,[\s\S]*?windowsHide:\s*true/);
+  const svSource = await readFile(new URL("../lib/sensevoice-installer.js", import.meta.url), "utf8");
+  assert.match(svSource, /spawn\(\s*'tar',[\s\S]*?windowsHide:\s*true/);
 });

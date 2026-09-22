@@ -2,6 +2,11 @@
 
 Notable changes to `@goodandready/dsh-voice`.
 
+## 0.8.35
+
+### Fixed
+- **Windows: hide console windows for spawned processes.** Pass `{ windowsHide: true }` to `ffmpeg` audio conversion in `lib/wav.js` and `tar` archive extraction in `lib/sensevoice-installer.js`. On Windows under Electron (DSH Desktop GUI), this prevents the brief black console window (`conhost.exe`) flash when invoking child processes (GooDAnDReaDY/dsh-voice#6, Gitea #141).
+
 ## 0.8.34
 
 ### Fixed

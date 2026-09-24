@@ -51,3 +51,56 @@ test('preset providers configuration validation', () => {
     assert.ok(CUSTOM_TEMPLATES.includes(conf.template), `${key} must have valid template`)
   }
 })
+
+import { createConfigReader } from '../lib/config-compat.js'
+import { readFileSync } from 'node:fs'
+
+test('Config schema has volatile support in lib/index.js', () => {
+  const indexSrc = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
+  assert.match(indexSrc, /function makeVolatile\(schema\)/, 'makeVolatile helper must exist')
+  assert.match(indexSrc, /export const Config = typeof z\.number\(\)\.volatile === 'function'/, 'Config must conditionally export volatile schema')
+  assert.match(indexSrc, /createConfigReader\(baseConfig, ctx\)/, 'apply() must use createConfigReader')
+})
+
+test('createConfigReader decodes volatile nodes and caches unwrapped results', () => {
+  const events = []
+  const mockCtx = {
+    on(event, handler) {
+      events.push({ event, handler })
+    }
+  }
+
+  const rawConfig = {
+    hotkey: { get: () => 'Alt' },
+    dictation: {
+      language: { get: () => 'ru' },
+      vadSilenceMs: 800,
+    },
+    plainField: 'normal',
+  }
+
+  const reader = createConfigReader(rawConfig, mockCtx)
+  const cfg1 = reader()
+
+  assert.equal(cfg1.hotkey, 'Alt')
+  assert.equal(cfg1.dictation.language, 'ru')
+  assert.equal(cfg1.dictation.vadSilenceMs, 800)
+  assert.equal(cfg1.plainField, 'normal')
+
+  // Identity is stable across calls when not invalidated
+  const cfg2 = reader()
+  assert.equal(cfg1, cfg2)
+
+  // Invalidate on event
+  assert.ok(events.length >= 3, 'Registered event listeners')
+  const updateListener = events.find(e => e.event === 'loader/volatile-update')
+  assert.ok(updateListener, 'loader/volatile-update listener registered')
+
+  // Mutate underlying volatile getter
+  rawConfig.hotkey.get = () => 'Control'
+  updateListener.handler()
+
+  const cfg3 = reader()
+  assert.equal(cfg3.hotkey, 'Control')
+  assert.equal(cfg3.dictation.language, 'ru')
+})

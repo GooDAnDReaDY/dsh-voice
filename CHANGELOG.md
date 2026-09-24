@@ -2,6 +2,13 @@
 
 Notable changes to `@goodandready/dsh-voice`.
 
+## 0.8.37
+
+### Fixed
+- **Settings form appears on DSH 0.1.7-rc.1.** Config fields are declared with `.volatile()` so `@deepseek-ai/dsh-settings` recognizes the plugin's editable configuration schema and announces the `dsh-voice` namespace to client forms (GooDAnDReaDY/dsh-voice#7, Gitea #145).
+- **Volatile configuration decoding.** `createConfigReader` unwraps volatile `.get()` nodes on modern DSH cores while caching resolved values across requests.
+- **Client slot cleanup.** Removed dead `settings.plugin.item` registration while preserving `plugins.item` and `plugins.row.config`.
+
 ## 0.8.36
 
 ### Fixed

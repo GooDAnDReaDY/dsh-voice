@@ -92,15 +92,8 @@ done < <(git show "${gitea_ref:-origin/main}:package.json" | node -e '
   });')
 
 glob_match() {
-  # npm "files" globs: * and ? stay inside one path segment.
-  python3 - "$1" "$2" <<'PY'
-import re, sys
-pat, path = sys.argv[1], sys.argv[2]
-if not any(ch in pat for ch in "*?["):
-    raise SystemExit(1)
-rx = "^" + "".join("[^/]*" if ch == "*" else "[^/]" if ch == "?" else re.escape(ch) for ch in pat) + "$"
-raise SystemExit(0 if re.match(rx, path) else 1)
-PY
+  local pat="$1" path="$2"
+  [[ "$path" == $pat ]]
 }
 
 is_allowed() {
@@ -123,11 +116,42 @@ is_forbidden() {
 }
 
 list_tree() {
-  local ref="$1" path
-  git ls-tree -r --name-only "$ref" | while IFS= read -r path; do
-    if is_forbidden "$path"; then continue; fi
-    if is_allowed "$path"; then echo "$path"; fi
-  done | LC_ALL=C sort
+  local ref="$1"
+  python3 - "$ref" <<'PY'
+import json, subprocess, sys
+from pathlib import PurePosixPath
+
+ref = sys.argv[1]
+raw_pkg = subprocess.check_output(['git', 'show', f'{ref}:package.json'], text=True)
+pkg = json.loads(raw_pkg)
+allow = set(pkg.get('files', [])) | {
+    ".gitignore", "LICENSE", "README.md", "README.ru.md", "README.zh.md",
+    "CHANGELOG.md", "package.json", "cordis.patch.yml"
+}
+forbidden = {
+    "AGENTS.md", "index.md", "deploy.sh", ".gitea", ".worktrees",
+    ".planning", "__pycache__", ".ruff_cache", ".venv", "node_modules"
+}
+
+all_files = subprocess.check_output(['git', 'ls-tree', '-r', '--name-only', ref], text=True).splitlines()
+
+def is_allowed(path_str):
+    for f in forbidden:
+        if path_str == f or path_str.startswith(f + '/'):
+            return False
+    p = PurePosixPath(path_str)
+    for a in allow:
+        a_clean = a.rstrip('/')
+        if path_str == a_clean or path_str.startswith(a_clean + '/'):
+            return True
+        if p.match(a):
+            return True
+    return False
+
+for path in sorted(all_files):
+    if is_allowed(path):
+        print(path)
+PY
 }
 
 echo "repository : $REPO_DIR"

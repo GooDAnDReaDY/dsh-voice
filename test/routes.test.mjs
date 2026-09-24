@@ -18,6 +18,7 @@ test("lib/client.js contains unified clinebot design classes and ErrorBoundary",
   assert.ok(content.includes(".cb-btn-primary"), "has .cb-btn-primary class");
   assert.ok(content.includes("createErrorBoundary"), "has createErrorBoundary helper");
   assert.ok(content.includes("/dsh-voice/status"), "fetches /dsh-voice/status");
+  assert.ok(content.includes("/dsh-voice/config"), "fetches and saves /dsh-voice/config");
   assert.ok(content.includes("AbortController"), "uses AbortController for fetch timeout");
   assert.ok(content.includes(".dvo-wave{flex:1;min-width:0;max-width:100%"), "prevents canvas overflow with min-width:0 and max-width:100%");
 });
@@ -28,6 +29,7 @@ test("lib/index.js registers correct routes and tool names", () => {
   const content = fs.readFileSync(indexPath, "utf8");
 
   assert.ok(content.includes("path: '/dsh-voice/status'"), "registers /dsh-voice/status route");
+  assert.ok(content.includes("registerConfigRoutes"), "registers config route handler");
   assert.ok(content.includes("path: '/dsh-voice/polish'"), "registers /dsh-voice/polish route");
   assert.ok(content.includes("path: '/dsh-voice/transcribe'"), "registers /dsh-voice/transcribe route");
   assert.ok(content.includes("name: 'transcribe_audio'"), "registers transcribe_audio tool");

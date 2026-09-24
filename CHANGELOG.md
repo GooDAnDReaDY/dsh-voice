@@ -2,6 +2,13 @@
 
 Notable changes to `@goodandready/dsh-voice`.
 
+## 0.8.38
+
+### Fixed
+- **whisper-server & SenseVoice autostart on deferred settings loading.** Autostart is wired to trigger once Cordis `settings` service finishes deferred initialization, on `scope.watch()` settings updates, and on `loader/volatile-update`, `settings/document-updated`, and `config` events (GooDAnDReaDY/dsh-voice#8, Gitea #147).
+- **Extended autostart healthcheck timeout.** Increased healthcheck timeout from 10s to 30s to reliably support cold model loading on Apple Silicon (Metal) and CPU.
+- **Premature child process exit detection.** Added immediate exit code check so failed binary launches fail fast with a descriptive error instead of waiting for the full timeout.
+
 ## 0.8.37
 
 ### Fixed

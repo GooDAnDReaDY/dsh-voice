@@ -129,6 +129,16 @@ v0.8.18 质量审查后的修复批次（Gitea #79–#87，PR #88）：
 
 ---
 
+## 🤖 智能体工具与 HTTP 端点
+
+* `POST /dsh-voice/transcribe` — 音频转写：`{ dataBase64, mimeType, mode }` → `{ ok, text, provider, tookMs }`
+* `POST /dsh-voice/polish` — 文本模型润色：`{ text }` → `{ ok, text }`
+* `GET /dsh-voice/status` — 查询后端状态、服务商健康度与 SenseVoice
+* `GET /dsh-voice/config` — 获取插件运行时配置快照
+* `PUT /dsh-voice/config` — 跨网络安全持久化更新插件配置
+
+---
+
 ## 📦 安装指南
 
 ```bash

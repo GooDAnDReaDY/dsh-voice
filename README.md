@@ -217,6 +217,8 @@ Registers `transcribe_audio(file_path, language?)` in `ctx.tools`, allowing agen
 * `POST /dsh-voice/transcribe` — `{ dataBase64, mimeType, mode }` → `{ ok, text, provider, tookMs }`
 * `POST /dsh-voice/polish` — `{ text }` → `{ ok, text }`
 * `GET /dsh-voice/status` — Returns daemon status, active chains, SenseVoice.
+* `GET /dsh-voice/config` — Returns live plugin configuration snapshot.
+* `PUT /dsh-voice/config` — Updates and persists plugin configuration across network.
 
 ---
 

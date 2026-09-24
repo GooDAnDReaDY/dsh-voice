@@ -2,6 +2,18 @@
 
 Notable changes to `@goodandready/dsh-voice`.
 
+## 0.9.0
+
+### Added
+- **Host settings persistence route (`/dsh-voice/config`).** Added dedicated host route for reading (`GET`) and updating (`PUT`/`POST`) plugin configuration directly on the server, solving DSH network limitations where client-side settings persistence is blocked in non-loopback environments (Gitea #149).
+- **Security & validation for config routes.** Implemented fail-closed caller verification (`isTrustedCaller`), allowed HTTP method enforcement, 503 handling when settings service is unavailable, and full schema validation against `BaseConfig`.
+
+### Changed
+- **Client settings card (`VoiceSection`) network-ready.** Fetches `/dsh-voice/config` on mount to render and populate settings even when kernel `configForms` reports `unavailable` or `writable: false` over the network. Saves directly via HTTP `PUT /dsh-voice/config` with clear error toasts on failure and loopback `scope.set` best-effort sync.
+
+### Fixed
+- **Hotkey typing collision guard.** In `installHotkey`, non-modifier hotkeys (such as letter keys) no longer trigger voice recording when typing inside text inputs, textareas, or `contenteditable` elements.
+
 ## 0.8.38
 
 ### Fixed

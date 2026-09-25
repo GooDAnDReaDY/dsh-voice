@@ -2,6 +2,21 @@
 
 Notable changes to `@goodandready/dsh-voice`.
 
+## 0.9.2
+
+### Fixed
+- **Voice actions client delivery.** Forward `action` from `sendAudio` in `lib/client-src/30-core.js` so hands-free spoken actions (`send`, `cancel`, `clear`, `newline`) execute properly in the client recording loop (#156).
+- **Jargon editor input state decoupling.** Maintain distinct raw editing state `[jargonInput, setJargonInput]` in `VoiceSection` to prevent partial keystrokes from being wiped out before delimiters are typed (#157).
+- **SenseVoice mandatory tokens parameter.** Wire `findTokensFile` into `startSensevoice` in `lib/index.js`, passing mandatory `--tokens` to `sherpa-onnx-offline-http-server` on startup (#158).
+- **SenseVoice installer archive cleanup.** Unlink `sensevoice.tar.bz2` immediately after extraction and on download failure, reclaiming ~150 MB disk space (#159).
+- **Status fetch recovery.** Reset `chainsPromise = null` on error in `modeChain()`, preventing temporary network hiccups from permanently disabling voice recording (#160).
+- **Chinese voice commands & structured prompts.** Add Chinese speech commands to `extractVoiceActions` (`发送`, `取消`, `清空`, `换行`) and `submitToStructuredPrompt` (`是`, `好`, `确认`, `同意`, `不`, `否`, `取消`) (#163).
+
+### Refactored
+- **Lifecycle tool disposal.** Wrap `ctx.tools.register(transcribe_audio)` in `ctx.effect`, ensuring clean tool unregistration during plugin reload (#161).
+- **Code hygiene & deduplication.** Remove duplicate `isAutoLang` definition in `lib/index.js`, importing the canonical helper from `./provider-http.js` (#162).
+- **Client build parity check.** Add `scripts/build-client.mjs --check`, `npm run build:check`, and `test/build-parity.test.mjs` to ensure generated `lib/client.js` stays in sync with `lib/client-src/` (#164).
+
 ## 0.9.1
 
 ### Security

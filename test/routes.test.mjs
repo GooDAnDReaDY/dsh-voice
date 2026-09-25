@@ -91,3 +91,13 @@ test("lib/client.js includes core chevron primitive with fallback and accessible
 
 
 
+
+
+test("lib/client.js localizes jargon placeholder without hardcoded Russian literals (#151)", () => {
+  const clientPath = path.join(rootDir, "lib", "client.js");
+  const content = fs.readFileSync(clientPath, "utf8");
+
+  assert.ok(!content.includes("кубик -> k8s"), "jargon editor must not hardcode Russian placeholder");
+  assert.ok(content.includes("jargonPlaceholder"), "uses jargonPlaceholder key");
+  assert.ok(content.includes("k8s -> kubernetes"), "contains localized example string");
+});

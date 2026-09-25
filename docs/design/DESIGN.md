@@ -49,6 +49,11 @@
 - Don't: hardcode theme hex colors; register a full inline `ru` dictionary; put secrets in settings (credential *names* only).
 
 ## Locked Design Decisions
+- 2026-09-25 — Route security policy hardening (#117): Same-site requests are strictly rejected (isTrustedCaller), requiring exact same-origin or loopback callers.
+- 2026-09-25 — SenseVoice status route protection and path redaction (#153): `/dsh-voice/sensevoice-installer` guards both GET and POST with `isTrustedCaller`, and all returned model/token paths are redacted (no absolute system paths leaked).
+- 2026-09-25 — Audio tool path boundary and content verification (#152): `transcribe_audio` tool enforces lexical root boundary check before stat/read, validates realpath to prevent symlink traversal escapes, and verifies audio magic bytes independently of file extension.
+- 2026-09-25 — Localized jargon editor placeholder (#151): Jargon placeholder example is localized via locale dictionaries (`en`, `zh`) instead of hardcoded strings.
+- 2026-09-25 — Source tree release hygiene (#154): Release artifacts (`*.tgz`) and worktree directories (`.worktrees/`) are excluded via `.gitignore`, and `npm run pack:check` blocks if tarballs exist in the source root.
 - 2026-09-09 — settings stay a plugin card (`settings.plugin.item`), not a sidebar section; reason: flat sidebar is a shared scarce resource.
 - 2026-09-09 — Changed in v0.8.19: inline `ru` locale dictionary removed; English is the only source dictionary. Users who want Russian UI must install the translation plugin. Reason: authoring contract and drift control. Condition to revisit: product decision to re-bundle locales per plugin.
 - 2026-09-09 — Changed in v0.8.19: visualizer paints from DSH theme tokens (no hardcoded hex accents). Reason: light/dark correctness.

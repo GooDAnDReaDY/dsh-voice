@@ -1,6 +1,6 @@
 {
   "name": "@goodandready/dsh-voice",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "Voice input for DeepSeek Harness: dictation chunked by pauses and voice messages, each with its own provider fallback chain (Deepgram, Groq, HuggingFace, local whisper.cpp, plus any OpenAI-compatible API of your own).",
   "license": "MIT",
   "type": "module",
@@ -43,6 +43,7 @@
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "build:client": "node scripts/build-client.mjs",
+    "build:check": "node scripts/build-client.mjs --check",
     "pretest": "node scripts/build-client.mjs",
     "lint": "node --check lib/*.js scripts/*.mjs",
     "pack:check": "node scripts/pack-check.mjs"

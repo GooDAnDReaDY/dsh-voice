@@ -11,8 +11,10 @@ import {
   findTokensFile,
   getSensevoiceStatus,
   registerSensevoiceInstaller,
-  downloadArchive
+  downloadArchive,
+  redactModelPath
 } from '../lib/sensevoice-installer.js'
+import { mockReq, mockRes, jsonBody } from './helpers/mock-http.mjs'
 
 test('SENSEVOICE URLs are valid https links', () => {
   assert.ok(SENSEVOICE_MODEL_URL.startsWith('https://'))
@@ -84,5 +86,69 @@ test('downloadArchive writes the response body and closes the file', async () =>
   } finally {
     globalThis.fetch = previous
     await rm(dir, { recursive: true, force: true })
+  }
+})
+
+
+test('redactModelPath removes absolute path prefix and preserves .dsh/models location', () => {
+  assert.equal(redactModelPath('/home/vadim/.dsh/models/sensevoice/model.int8.onnx'), '~/.dsh/models/sensevoice/model.int8.onnx')
+  assert.equal(redactModelPath('C:\\Users\\vadim\\.dsh\\models\\sensevoice\\tokens.txt'), '~/.dsh/models/sensevoice/tokens.txt')
+  assert.equal(redactModelPath('/opt/secret/models/model.bin'), 'model.bin')
+  assert.equal(redactModelPath(''), '')
+})
+
+test('registerSensevoiceInstaller route guards GET and POST against untrusted callers (#153)', async () => {
+  let routeHandler = null
+  const mockCtx = {
+    webServer: {
+      register(opts) {
+        routeHandler = opts.handler
+        return () => {}
+      }
+    }
+  }
+  registerSensevoiceInstaller(mockCtx, {
+    liveConfig: () => ({}),
+    isAlive: async () => false,
+    updateConfig: async () => {},
+    startSensevoice: async () => {}
+  })
+
+  // 1. Untrusted GET -> 403
+  const untrustedGetReq = mockReq('GET')
+  untrustedGetReq.socket = { remoteAddress: '192.168.1.150' }
+  untrustedGetReq.headers = { host: 'example.com' }
+  const getRes = mockRes()
+  await routeHandler(untrustedGetReq, getRes)
+  assert.equal(getRes.statusCode, 403)
+  assert.equal(jsonBody(getRes).ok, false)
+
+  // 2. Untrusted POST -> 403
+  const untrustedPostReq = mockReq('POST')
+  untrustedPostReq.socket = { remoteAddress: '192.168.1.150' }
+  untrustedPostReq.headers = { host: 'example.com' }
+  const postRes = mockRes()
+  await routeHandler(untrustedPostReq, postRes)
+  assert.equal(postRes.statusCode, 403)
+  assert.equal(jsonBody(postRes).ok, false)
+
+  // 3. Trusted loopback GET -> 200 and no absolute paths
+  const trustedGetReq = mockReq('GET')
+  trustedGetReq.socket = { remoteAddress: '127.0.0.1' }
+  trustedGetReq.headers = { host: 'localhost:3080' }
+  const trustedRes = mockRes()
+  await routeHandler(trustedGetReq, trustedRes)
+  assert.equal(trustedRes.statusCode, 200)
+  const body = jsonBody(trustedRes)
+  assert.equal(typeof body.installed, 'boolean')
+  assert.equal(typeof body.running, 'boolean')
+  // Verify no absolute path leaks (no /home/, no /mnt/, no /Users/)
+  if (body.modelPath) {
+    assert.ok(!body.modelPath.startsWith('/home/'), 'modelPath must not leak /home/')
+    assert.ok(!body.modelPath.startsWith('/mnt/'), 'modelPath must not leak /mnt/')
+    assert.ok(!body.modelPath.includes(':\\'), 'modelPath must not leak Windows drive')
+  }
+  if (body.tokensPath) {
+    assert.ok(!body.tokensPath.startsWith('/home/'), 'tokensPath must not leak /home/')
   }
 })

@@ -61,10 +61,15 @@ test('isTrustedCaller permits loopback and validated same-origin callers, reject
     socket: { remoteAddress: '192.168.1.150' },
     headers: { 'sec-fetch-site': 'same-origin', host: 'example.com:3080' },
   }), true)
+  // same-site is rejected without a validated origin (#117)
   assert.equal(isTrustedCaller({
     socket: { remoteAddress: '192.168.1.150' },
     headers: { 'sec-fetch-site': 'same-site', host: 'example.com:3080' },
-  }), true)
+  }), false)
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '192.168.1.150' },
+    headers: { 'sec-fetch-site': 'same-site', origin: 'https://sub.example.com', host: 'example.com' },
+  }), false)
 
   // 3. Matching origin -> allowed
   assert.equal(isTrustedCaller({

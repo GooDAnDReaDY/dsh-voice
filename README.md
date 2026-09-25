@@ -211,7 +211,7 @@ Open **Settings → Plugins → Plugin settings → Voice** in the Web UI:
 ## 🤖 Agent Tool & HTTP API
 
 ### Agent Tool (`transcribe_audio`)
-Registers `transcribe_audio(file_path, language?)` in `ctx.tools`, allowing agents to analyze audio files, interview recordings, and voice notes directly from disk.
+Registers `transcribe_audio(file_path, language?)` in `ctx.tools`, allowing agents to analyze audio files, interview recordings, and voice notes directly from disk. Path containment is strictly enforced against allowed directories (`allowedAudioDirs`, `~/.dsh`, `tmpdir`, `cwd`) with symlink traversal escape prevention and magic-byte audio format validation.
 
 ### Internal HTTP Endpoints
 * `POST /dsh-voice/transcribe` — `{ dataBase64, mimeType, mode }` → `{ ok, text, provider, tookMs }`
@@ -219,6 +219,7 @@ Registers `transcribe_audio(file_path, language?)` in `ctx.tools`, allowing agen
 * `GET /dsh-voice/status` — Returns daemon status, active chains, SenseVoice.
 * `GET /dsh-voice/config` — Returns live plugin configuration snapshot.
 * `PUT /dsh-voice/config` — Updates and persists plugin configuration across network.
+* `GET/POST /dsh-voice/sensevoice-installer` — SenseVoice 1-click model installation status and trigger (protected by `isTrustedCaller`, model paths redacted).
 
 ---
 

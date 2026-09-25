@@ -211,7 +211,7 @@ dsh plugin --profile web add @goodandready/dsh-voice
 ## 🤖 Инструмент агента и HTTP API
 
 ### Инструмент агента (`transcribe_audio`)
-Регистрирует `transcribe_audio(file_path, language?)` в `ctx.tools`, позволяя агентам распознавать аудиофайлы, интервью и записи с диска.
+Регистрирует `transcribe_audio(file_path, language?)` в `ctx.tools` (с проверкой границ разрешённых каталогов `allowedAudioDirs` / `~/.dsh` / `tmpdir` / `cwd`, защитой от симлинков и валидацией сигнатур аудиофайлов), позволяя агентам распознавать аудиофайлы, интервью и записи с диска.
 
 ### Внутренние HTTP эндпоинты
 * `POST /dsh-voice/transcribe` — `{ dataBase64, mimeType, mode }` → `{ ok, text, provider, tookMs }`

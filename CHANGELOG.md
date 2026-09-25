@@ -2,6 +2,17 @@
 
 Notable changes to `@goodandready/dsh-voice`.
 
+## 0.9.1
+
+### Security
+- **Route source authorization hardening.** Strictly reject `sec-fetch-site: same-site` cross-origin requests on POST routes (`/dsh-voice/transcribe`, `/dsh-voice/polish`, `/dsh-voice/config`, `/dsh-voice/sensevoice-installer`), enforcing strict same-origin or loopback caller verification (#117).
+- **SenseVoice installer status protection & path redaction.** Guard `/dsh-voice/sensevoice-installer` GET and POST with trusted caller verification (403 for untrusted requests) and redact absolute filesystem paths from model and token status responses to prevent server directory layout disclosure (#153).
+- **Audio tool path boundary & magic-byte validation.** Enforce strict boundary validation (`isPathUnderRoots`) against allowed roots (`allowedAudioDirs`, `~/.dsh`, `tmpdir`, `cwd`) before `stat`/`read` in `transcribe_audio` tool, protect against realpath symlink traversal escapes, and validate audio magic bytes independently of file extension (#152).
+
+### Fixed
+- **Jargon editor placeholder localization.** Localize user dictionary placeholder examples in English and Chinese locale dictionaries (`jargonPlaceholder`) instead of hardcoding Russian literals (#151).
+- **Release artifact hygiene & package verification.** Relocate release archives outside the source tree, exclude `*.tgz` and `.worktrees/` via `.gitignore`, and update `npm run pack:check` to guard against stray tarballs and support npm 12 pack JSON output (#154).
+
 ## 0.9.0
 
 ### Added

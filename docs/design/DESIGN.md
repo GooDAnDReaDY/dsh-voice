@@ -85,3 +85,14 @@
   - Developer lexicon correction (`techJargonCorrection`, `jargonDictionary`): Phonetic slang normalization (GitHub, Docker, Kubernetes, pnpm, etc.) with customizable user dictionary in the settings card.
   - Granular control: All 10 features have dedicated toggle switches in the Settings Card, strictly styled with `--dsw-alias-*` tokens and zero hardcoded colors.
 
+
+- 2026-09-25 — Batch audit hardening and reliability polish:
+  - Voice action forwarding (#156): sendAudio in lib/client-src/30-core.js preserves and returns action: parsed.action || null, enabling hands-free voice commands (send, cancel, clear, newline) in the recording loop.
+  - Jargon dictionary input state (#157): Decoupled raw textarea editing from parsed dictionary state with [jargonInput, setJargonInput], preventing keystroke clearing while typing.
+  - SenseVoice mandatory tokens flag (#158): Wired findTokensFile into startSensevoice in lib/index.js, supplying --tokens to sherpa-onnx-offline-http-server.
+  - SenseVoice model archive cleanup (#159): startSensevoiceInstall in lib/sensevoice-installer.js unlinks sensevoice.tar.bz2 immediately after extraction and on failure, saving ~150 MB disk space.
+  - Status fetch recovery (#160): Reset chainsPromise = null on error in modeChain(), preventing temporary network failures from permanently disabling speech recording.
+  - Lifecycle tool disposal (#161): Wrapped ctx.tools.register(transcribe_audio) in ctx.effect, guaranteeing clean unregistration on hot reload.
+  - Code deduplication (#162): Replaced duplicate isAutoLang definition in lib/index.js with shared import from ./provider-http.js.
+  - Multilingual voice commands (#163): Added Chinese command matching to extractVoiceActions (发送, 取消, 清空, 换行) and submitToStructuredPrompt (是, 好, 确认, 同意, 不, 否, 取消).
+  - Client build parity check (#164): Added scripts/build-client.mjs --check, npm run build:check, and test/build-parity.test.mjs.

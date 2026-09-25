@@ -15,5 +15,17 @@ for (const f of files) {
   out += await readFile(path.join(srcDir, f), 'utf8')
   if (!out.endsWith('\n')) out += '\n'
 }
+const isCheck = process.argv.includes('--check')
+if (isCheck) {
+  let existing = ''
+  try { existing = await readFile(outFile, 'utf8') } catch {}
+  if (existing !== out) {
+    console.error('build:client parity check failed: lib/client.js does not match lib/client-src fragments. Run "npm run build:client".')
+    process.exit(1)
+  }
+  console.log(`build:client parity check OK (${files.length} fragments, ${out.length} bytes)`)
+  process.exit(0)
+}
+
 await writeFile(outFile, out, 'utf8')
 console.log(`built lib/client.js from ${files.length} fragments (${out.length} bytes)`)

@@ -96,3 +96,10 @@
   - Code deduplication (#162): Replaced duplicate isAutoLang definition in lib/index.js with shared import from ./provider-http.js.
   - Multilingual voice commands (#163): Added Chinese command matching to extractVoiceActions (发送, 取消, 清空, 换行) and submitToStructuredPrompt (是, 好, 确认, 同意, 不, 否, 取消).
   - Client build parity check (#164): Added scripts/build-client.mjs --check, npm run build:check, and test/build-parity.test.mjs.
+
+- 2026-09-28 — Hotkey lifecycle singleton and multi-key combinations (#171):
+  - Global listener cleanup (`clearGlobalHotkey`): Global singleton tracking (`window.__dsh_voice_hotkey_cleanup` and module-scoped `activeHotkeyCleanup`) enforces teardown of all previous `keydown`/`keyup`/`blur` listeners on hotkey rebind, plugin reload, or component unmount.
+  - Multi-key combinations & function keys: `keyFromEvent` and `hotkeyMatches` support compound combinations (`Control+Space`, `Alt+KeyV`) and function keys (`F1`-`F24`). `keyLabel` formats compound keys into readable strings (`Ctrl + Space`, `Alt + V`).
+  - Composer input focus tolerance (`isAllowedInEditable`): Prevents non-character hotkeys (modifiers, combos, F-keys, Tab, Insert) from being discarded while typing in editable elements (`TEXTAREA`/`INPUT`), accompanied by explicit `event.preventDefault()` and `event.stopPropagation()` to avoid cursor displacement.
+  - Immediate reactive binding: Selecting a new hotkey or clearing in the Settings card applies immediately to the active client runtime (`voice.hotkey`) and attaches the new listener without requiring a full page refresh.
+

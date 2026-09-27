@@ -2,6 +2,13 @@
 
 Notable changes to `@goodandready/dsh-voice`.
 
+## 0.9.3
+
+### Fixed
+- **Hotkey lifecycle cleanup singleton.** Ensure existing `keydown`/`keyup` document event listeners are cleaned up across plugin reloads, hotkey rebinds, and composer unmounts using a dedicated singleton (`clearGlobalHotkey` / `window.__dsh_voice_hotkey_cleanup`) (#171).
+- **Composer editable key filtering.** Allow multi-key combinations (e.g. `Ctrl+Space`, `Alt+V`) and function keys (`F1`-`F12`) to trigger voice recording inside textareas and contenteditable inputs, while preventing accidental triggers on standard typing and suppressing character insertion (#171).
+- **Immediate hotkey persistence & multi-key combo capture.** Capture key combinations in Settings UI, update active listener immediately upon key binding without requiring manual save, and synchronize persisted settings (#171).
+
 ## 0.9.2
 
 ### Fixed

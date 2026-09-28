@@ -2,6 +2,16 @@
 
 Notable changes to `@goodandready/dsh-voice`.
 
+## 0.9.4
+
+### Security
+- **Route caller verification hardening.** Evaluate `Sec-Fetch-Site: cross-site | same-site` rejection and `Origin`/`Referer` validation against `Host` prior to loopback address checking in `isTrustedCaller`, and enforce `Content-Type: application/json` or `application/octet-stream` for POST/PUT/PATCH mutations to prevent simple cross-site form CSRF behind reverse proxies (#173).
+
+### Fixed
+- **Base64-expanded payload body limit and 413 error status.** Expand body read cap in `/dsh-voice/transcribe` to `Math.ceil((maxFileBytes * 4) / 3) + 64 KiB` to support base64-encoded audio up to 25 MiB, and return structured HTTP 413 (`code: 'too-large'`) when body size limit is exceeded (#174).
+- **Public recognition language default & conditional Russian normalization.** Decouple default `language` in `dictation` and `message` configurations to `''` (`auto`), enabling automatic language detection across providers. Gate Russian numeric parsing (`wordsToDigits`) and tech slang replacements (`applyJargonDictionary`) behind `isRussianLang` checks, activating them only when language is Russian or contains Cyrillic characters (#175).
+- **Self-updater lockfile resilience & supply-chain policy preservation.** Retain pnpm supply-chain verification by removing `--config.minimumReleaseAge=0` from updater arguments. Add `checkProfileLock` to return HTTP 409 when `package.json.lock` is held by a running PID, and clean up abandoned lockfiles on timeout or process exit (#176).
+
 ## 0.9.3
 
 ### Fixed

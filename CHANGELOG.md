@@ -2,6 +2,25 @@
 
 Notable changes to `@goodandready/dsh-voice`.
 
+## 0.9.7
+
+### Fixed
+- **Lifecycle effect disposal.** Wrap client slot injections (`conversation.input.right`, `conversation.input.dock`, `plugins.item`, `plugins.row.config`, `settings.plugin.item`) and host volatile event listeners (`loader/volatile-update`, `settings/document-updated`, `config`) in `ctx.effect` returning disposers to prevent listener and slot leaks across plugin reloads (#183).
+- **Localization translator prop inheritance.** Pass `t` prop to `ChainEditor` and `CustomEditor` to ensure nested components utilize the contextual translator, preventing variable shadowing and untranslated labels (#185).
+
+### Refactored
+- **Client code modularity.** Decompose monolithic 1023-line `72-voice-section.js` down to 540 lines across 7 modular fragments: `72-status-card.js`, `72-hardware.js`, `72-hooks.js`, `72-sensevoice.js`, `72-jargon.js`, `72-dashboard.js`, and `72-updater.js` (#184).
+- **Dead import elimination.** Remove 11 unused imports in `lib/index.js` and `lib/sensevoice-installer.js` (#186).
+
+### Documentation
+- **Design contract completeness.** Update `docs/design/DESIGN.md` to document all live HTTP endpoints (`/config`, `/sensevoice-installer`, `/update`), tool schemas (`transcribe_audio`), and client slot seats (#187).
+
+## 0.9.6
+
+### Fixed
+- **SenseVoice installer archive path validation & auto-extraction.** Robust archive extraction and cleanup (#178, #179).
+- **Language detection & audio architecture enhancements.** Enhanced language detection fallback and robust ffmpeg conversion (#180, #181).
+
 ## 0.9.4
 
 ### Security

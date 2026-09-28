@@ -1,7 +1,7 @@
 // Minimal request/response doubles for host-route helpers.
 // No cordis, no network, no peer dependencies.
 
-export function mockReq(method, body) {
+export function mockReq(method, body, headers = {}) {
   const chunks = []
   if (body != null) {
     chunks.push(Buffer.isBuffer(body) ? body : Buffer.from(String(body)))
@@ -11,7 +11,10 @@ export function mockReq(method, body) {
   let errCb = null
   const req = {
     method,
-    headers: {},
+    headers: {
+      ...(body != null ? { 'content-type': 'application/json' } : {}),
+      ...headers,
+    },
     destroyed: false,
     on(event, cb) {
       if (event === 'data') dataCb = cb

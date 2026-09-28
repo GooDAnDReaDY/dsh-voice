@@ -39,3 +39,42 @@ test('normalizePhrase: full pipeline', () => {
     'Привет мир, это тест.')
   assert.equal(normalizePhrase('сто двадцать пять', { digits: true }), '125')
 })
+
+import { isRussianLang } from '../lib/normalize.js'
+
+test('isRussianLang detects language and falls back to text content (#175)', () => {
+  assert.equal(isRussianLang('ru'), true)
+  assert.equal(isRussianLang('ru-RU'), true)
+  assert.equal(isRussianLang('ru_RU'), true)
+  assert.equal(isRussianLang('en'), false)
+  assert.equal(isRussianLang('zh'), false)
+
+  // auto / empty string checks text content
+  assert.equal(isRussianLang('', 'Привет мир'), true)
+  assert.equal(isRussianLang('auto', 'Привет мир'), true)
+  assert.equal(isRussianLang('', 'Hello world'), false)
+  assert.equal(isRussianLang('auto', 'Hello world'), false)
+  assert.equal(isRussianLang('auto', ''), false)
+})
+
+test('normalizePhrase respects language setting for Russian normalization (#175)', () => {
+  // English transcript should not be processed by Russian digits or jargon
+  const enText = 'one hundred twenty five commits on github'
+  assert.equal(
+    normalizePhrase(enText, { digits: true, jargon: true, lang: 'en' }),
+    'one hundred twenty five commits on github'
+  )
+
+  // Russian transcript with lang: 'ru' converts numbers and jargon
+  const ruText = 'запушил коммит на гитхаб сто двадцать пять'
+  assert.equal(
+    normalizePhrase(ruText, { digits: true, jargon: true, lang: 'ru' }),
+    'запушил commit на GitHub 125'
+  )
+
+  // Auto-detection: Cyrillic text converts numbers
+  assert.equal(
+    normalizePhrase('двадцать один вопрос', { digits: true, lang: 'auto' }),
+    '21 вопрос'
+  )
+})

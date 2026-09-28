@@ -101,7 +101,38 @@ test('isTrustedCaller permits loopback and validated same-origin callers, reject
     headers: { host: 'example.com' },
   }), false)
 
-  // 8. Null/undefined req -> false
+  // 8. Cross-site or mismatched origin on loopback address must be rejected (#173)
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: { 'sec-fetch-site': 'cross-site', host: 'localhost:3080' },
+  }), false, 'cross-site loopback request must be rejected')
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: { origin: 'https://evil.example', host: 'localhost:3080' },
+  }), false, 'mismatched origin on loopback must be rejected')
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: { referer: 'https://evil.example/page', host: 'localhost:3080' },
+  }), false, 'mismatched referer on loopback must be rejected')
+
+  // 9. Mutation requests (POST/PUT/PATCH) require application/json or octet-stream (#173)
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '127.0.0.1' },
+    method: 'POST',
+    headers: { 'content-type': 'text/plain' },
+  }), false, 'POST with text/plain must be rejected')
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '127.0.0.1' },
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+  }), false, 'POST with form data must be rejected')
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '127.0.0.1' },
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+  }), true, 'POST with application/json on loopback is allowed')
+
+  // 10. Null/undefined req -> false
   assert.equal(isTrustedCaller(null), false)
   assert.equal(isTrustedCaller({}), false)
 })

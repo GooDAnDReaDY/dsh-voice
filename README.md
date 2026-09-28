@@ -189,14 +189,14 @@ Open **Settings → Plugins → Plugin settings → Voice** in the Web UI:
 - id: dsh-voice
   config:
     dictation:
-      language: ru
+      language: "" # auto-detect by default; or specify "en", "ru", "zh", etc.
       vadSilenceMs: 700
       chain:
         - provider: deepgram
         - provider: groq
         - provider: local-whisper
     message:
-      language: ru
+      language: "" # auto-detect by default; or specify "en", "ru", "zh", etc.
       autoSendMs: 4000
       chain:
         - provider: openai
@@ -205,6 +205,8 @@ Open **Settings → Plugins → Plugin settings → Voice** in the Web UI:
     autoStart: true
     whisperModel: /models/ggml-medium-q8_0.bin
 ```
+
+> **Note on language handling**: Setting `language: ""` (default) allows providers to auto-detect the spoken language. Spoken numeral normalization (`wordsToDigits`) and standard Russian tech slang correction (`DEFAULT_JARGON_DICTIONARY`) activate conditionally only when Russian is selected or auto-detected in the transcript, ensuring non-Russian speech is never distorted.
 
 ---
 

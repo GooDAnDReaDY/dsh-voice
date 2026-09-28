@@ -189,14 +189,14 @@ dsh plugin --profile web add @goodandready/dsh-voice
 - id: dsh-voice
   config:
     dictation:
-      language: ru
+      language: "" # автоопределение по умолчанию; или укажите "ru", "en", "zh" и др.
       vadSilenceMs: 700
       chain:
         - provider: deepgram
         - provider: groq
         - provider: local-whisper
     message:
-      language: ru
+      language: "" # автоопределение по умолчанию; или укажите "ru", "en", "zh" и др.
       autoSendMs: 4000
       chain:
         - provider: openai
@@ -205,6 +205,8 @@ dsh plugin --profile web add @goodandready/dsh-voice
     autoStart: true
     whisperModel: /models/ggml-medium-q8_0.bin
 ```
+
+> **Примечание по языку**: Значение `language: ""` (по умолчанию) включает автоопределение языка провайдером. Нормализация числительных словами в цифры и стандартный словарь технического сленга применяются адаптивно только при распознавании русской речи, исключая искажение англоязычного текста.
 
 ---
 

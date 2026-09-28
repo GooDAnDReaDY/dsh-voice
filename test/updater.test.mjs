@@ -108,3 +108,53 @@ test('registerPluginUpdater mounts update route with method checking', async () 
   })
   assert.equal(postStatus, 403)
 })
+
+import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { readLockPid, isProcessAlive, checkProfileLock } from '../lib/updater.js'
+
+test('package.json.lock lifecycle and process alive detection (#176)', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-voice-lock-'))
+  const lockFile = join(dir, 'package.json.lock')
+
+  try {
+    // 1. No lock file
+    assert.deepEqual(checkProfileLock(dir), { locked: false })
+
+    // 2. Lock file with dead PID (e.g. 9999999) -> cleaned up automatically
+    writeFileSync(lockFile, '9999999', 'utf8')
+    const deadCheck = checkProfileLock(dir)
+    assert.equal(deadCheck.locked, false)
+    assert.equal(deadCheck.cleanedStale, true)
+    assert.equal(existsSync(lockFile), false, 'stale lock must be removed')
+
+    // 3. Lock file with current live PID -> reports locked
+    writeFileSync(lockFile, String(process.pid), 'utf8')
+    const liveCheck = checkProfileLock(dir)
+    assert.equal(liveCheck.locked, true)
+    assert.equal(liveCheck.pid, process.pid)
+
+    // 4. JSON lock format {"pid": ...}
+    writeFileSync(lockFile, JSON.stringify({ pid: process.pid }), 'utf8')
+    assert.equal(readLockPid(lockFile), process.pid)
+
+    // 5. isProcessAlive helper
+    assert.equal(isProcessAlive(process.pid), true)
+    assert.equal(isProcessAlive(9999999), false)
+    assert.equal(isProcessAlive(null), false)
+    assert.equal(isProcessAlive(-1), false)
+  } finally {
+    try { rmSync(dir, { recursive: true, force: true }) } catch { /* ignore */ }
+  }
+})
+
+test('updater source code does not disable supply-chain protection (#176)', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const content = await readFile(new URL('../lib/updater.js', import.meta.url), 'utf8')
+  assert.equal(
+    content.includes('--config.minimumReleaseAge=0'),
+    false,
+    'updater must not pass --config.minimumReleaseAge=0'
+  )
+})

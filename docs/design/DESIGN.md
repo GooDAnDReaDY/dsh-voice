@@ -10,13 +10,23 @@
   - Composer buttons (`conversation.input.right`): mic (dictation), wave (voice message), play last note.
   - Recording pill (`conversation.input.dock`): cancel, visualizer/caption, stop, pending send countdown, error.
   - Settings card (`settings.plugin.item`, key `dsh-voice`): chains, custom providers, general options, SenseVoice, provider health dashboard.
-- DSH UI / settings / slots: `conversation.input.right`, `conversation.input.dock`, `settings.plugin.item`; settings namespace `dsh-voice`.
+- DSH UI / settings / slots:
+  - `conversation.input.right` (composer action buttons: mic, voice message, play note)
+  - `conversation.input.dock` (recording pill with waveform visualizer)
+  - `plugins.item` (dedicated plugin page view in Plugins manager)
+  - `plugins.row.config` (plugin row configuration expandable seat)
+  - `settings.plugin.item` (legacy settings panel fallback, key `dsh-voice`)
 - API (host):
-  - `GET /dsh-voice/status`
-  - `POST /dsh-voice/transcribe`
-  - `POST /dsh-voice/polish`
+  - `GET /dsh-voice/status` (live daemon status, running engines, active providers)
+  - `POST /dsh-voice/transcribe` (audio chunk transcription with fallback chain)
+  - `POST /dsh-voice/polish` (LLM-based transcript punctuation and cleanup)
+  - `GET /dsh-voice/config`, `PUT /dsh-voice/config`, `POST /dsh-voice/config` (network configuration persistence)
+  - `GET /dsh-voice/sensevoice-installer`, `POST /dsh-voice/sensevoice-installer` (1-click model download and health polling)
+  - `GET /api/@goodandready/dsh-voice/update`, `POST /api/@goodandready/dsh-voice/update` (1-click self-updater)
+- Agent Tools:
+  - `transcribe_audio` (transcribes local audio files for AI agents with format validation and path confinement)
 - CLI: none.
-- Documentation: `README.md` (EN), `README.ru.md`, `README.zh.md`; this DESIGN.md; `index.md`.
+- Documentation: `README.md` (EN), `README.ru.md`, `README.zh.md`; this DESIGN.md.
 
 ## Visual Direction
 - Atmosphere: native DSH chrome — recording pill and settings card match core density, not a standalone brand site.
@@ -30,7 +40,7 @@
 - Accessibility: settings header is a `<button>` with `aria-expanded`; hotkey picker uses real key events; error text is not color-only (icon + text).
 
 ## Components And States
-- Components: `VoiceButtons`, `RecordPill`, `PluginCard`, `VoiceSection`, `ChainEditor`, `CustomEditor`, provider dashboard tiles, visualizers (liquid-wave, dynamic-orb, bars, off).
+- Components: `VoiceButtons`, `RecordPill`, `PluginCard`, `VoiceSection`, `ChainEditor`, `CustomEditor`, `ConnectionStatusCard`, `HardwareOptionsCard`, `SensevoiceSection`, `JargonEditor`, `ProviderDashboard`, `UpdaterCard`, visualizers (liquid-wave, dynamic-orb, bars, off).
 - Loading: settings snapshot `status === 'loading'` shows loading copy; composer reloads status async.
 - Empty / not ready: `unavailable` shows explanatory wait copy and polls `describe().load()`.
 - Success: saved toast `Saved ✓`; transcript appended to draft; message mode enters pending countdown.

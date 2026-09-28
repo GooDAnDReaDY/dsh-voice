@@ -81,7 +81,7 @@ test('Issue #174: base64-expanded payload calculations and size limits', () => {
 test('Issue #175: language defaults to auto (empty string) and respects non-Russian audio', async () => {
   // Check that default language in BaseConfig is empty string
   const indexContent = await import('node:fs/promises').then(fs =>
-    fs.readFile(new URL('../lib/index.js', import.meta.url), 'utf8')
+    fs.readFile(new URL('../lib/schema.js', import.meta.url), 'utf8')
   )
   assert.ok(
     indexContent.includes("language: z.string().default('')"),

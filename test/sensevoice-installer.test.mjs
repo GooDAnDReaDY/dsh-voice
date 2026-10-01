@@ -152,3 +152,10 @@ test('registerSensevoiceInstaller route guards GET and POST against untrusted ca
     assert.ok(!body.tokensPath.startsWith('/home/'), 'tokensPath must not leak /home/')
   }
 })
+
+test('lib/index.js wires SenseVoice installer updateConfig to modern SettingsForms settingsService (#193)', async () => {
+  const indexSource = await readFile(new URL('../lib/index.js', import.meta.url), 'utf8')
+  assert.match(indexSource, /settingsService\.replace/, 'must support settingsService.replace')
+  assert.match(indexSource, /settingsService\.update/, 'must support settingsService.update')
+  assert.match(indexSource, /updateConfig: async \(patch\) => \{[\s\S]*?settingsService/, 'installer updateConfig must wire to settingsService')
+})

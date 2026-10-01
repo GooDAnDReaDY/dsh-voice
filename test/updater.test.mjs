@@ -171,3 +171,11 @@ test('updater source code does not disable supply-chain protection (#176)', asyn
     'updater must not pass --config.minimumReleaseAge=0'
   )
 })
+
+test('updater source code awaits child exit and escalates SIGTERM to SIGKILL on timeout (#206)', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const updaterSrc = await readFile(new URL('../lib/updater.js', import.meta.url), 'utf8')
+  assert.ok(updaterSrc.includes("child.kill('SIGTERM')"), 'must send SIGTERM on timeout')
+  assert.ok(updaterSrc.includes("child.kill('SIGKILL')"), 'must escalate to SIGKILL on timeout')
+  assert.ok(updaterSrc.includes("if (timedOut)"), 'must defer rejection until child exit event fires')
+})

@@ -1,6 +1,6 @@
 {
   "name": "@goodandready/dsh-voice",
-  "version": "0.9.7",
+  "version": "0.9.9",
   "description": "Voice input for DeepSeek Harness: dictation chunked by pauses and voice messages, each with its own provider fallback chain (Deepgram, Groq, HuggingFace, local whisper.cpp, plus any OpenAI-compatible API of your own).",
   "license": "MIT",
   "type": "module",
@@ -63,10 +63,10 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-credentials": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-host-webserver": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-llm": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "^0.1.7-rc.2 || ^0.2.0-rc.1",
+    "@deepseek-ai/dsh-credentials": "^0.1.7-rc.2 || ^0.2.0-rc.1",
+    "@deepseek-ai/dsh-host-webserver": "^0.1.7-rc.2 || ^0.2.0-rc.1",
+    "@deepseek-ai/dsh-llm": "^0.1.7-rc.2 || ^0.2.0-rc.1",
     "@deepseek-ai/schemastery": "^3.18.1"
   }
 }

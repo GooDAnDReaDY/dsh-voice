@@ -144,6 +144,19 @@ test('package.json.lock lifecycle and process alive detection (#176)', () => {
     assert.equal(isProcessAlive(9999999), false)
     assert.equal(isProcessAlive(null), false)
     assert.equal(isProcessAlive(-1), false)
+
+    // 6. Unparsed or empty lock file is preserved and reports locked (#205)
+    writeFileSync(lockFile, '', 'utf8')
+    const emptyCheck = checkProfileLock(dir)
+    assert.equal(emptyCheck.locked, true)
+    assert.equal(emptyCheck.pid, null)
+    assert.equal(existsSync(lockFile), true, 'empty lockfile must be preserved')
+
+    writeFileSync(lockFile, 'invalid-json-content', 'utf8')
+    const unparsedCheck = checkProfileLock(dir)
+    assert.equal(unparsedCheck.locked, true)
+    assert.equal(unparsedCheck.pid, null)
+    assert.equal(existsSync(lockFile), true, 'unparsed lockfile must be preserved')
   } finally {
     try { rmSync(dir, { recursive: true, force: true }) } catch { /* ignore */ }
   }
@@ -157,4 +170,12 @@ test('updater source code does not disable supply-chain protection (#176)', asyn
     false,
     'updater must not pass --config.minimumReleaseAge=0'
   )
+})
+
+test('updater source code awaits child exit and escalates SIGTERM to SIGKILL on timeout (#206)', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const updaterSrc = await readFile(new URL('../lib/updater.js', import.meta.url), 'utf8')
+  assert.ok(updaterSrc.includes("child.kill('SIGTERM')"), 'must send SIGTERM on timeout')
+  assert.ok(updaterSrc.includes("child.kill('SIGKILL')"), 'must escalate to SIGKILL on timeout')
+  assert.ok(updaterSrc.includes("if (timedOut)"), 'must defer rejection until child exit event fires')
 })

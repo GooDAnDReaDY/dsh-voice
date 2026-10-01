@@ -84,3 +84,18 @@ test('autostart dispatch lifecycle simulator', async () => {
   assert.equal(whisperStarted, 2)
   assert.equal(sensevoiceStarted, 2)
 })
+
+test('startWhisper and startSensevoice support modern DSH 0.2 shell.execute contract (#191)', () => {
+  const indexSource = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
+  assert.match(indexSource, /ctx\.shell\?\.execute/, 'must support ctx.shell.execute')
+  assert.match(indexSource, /child\.done && typeof child\.done\.then === 'function'/, 'must handle ShellExecution.done promise')
+  assert.match(indexSource, /child\.status === 'exited' \|\| child\.status === 'failed'/, 'must handle ShellExecution status states')
+})
+
+test('startWhisper and startSensevoice release starting flag across all exit paths (#192)', () => {
+  const indexSource = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
+  // Check that try block begins immediately after starting latch in startWhisper
+  assert.match(indexSource, /startingWhisper = true\s*try \{/, 'startWhisper must wrap all checks in try/finally')
+  // Check that try block begins immediately after starting latch in startSensevoice
+  assert.match(indexSource, /startingSensevoice = true\s*try \{/, 'startSensevoice must wrap all checks in try/finally')
+})

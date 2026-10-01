@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.9
+
+### Fixed
+- **Settings Form State (#190)**: Lift jargon state to parent form to prevent `ReferenceError: jargonInput is not defined` when saving settings.
+- **Privacy Enforcement (#209)**: Enforce strict `localOnly` mode across Web Speech ASR and text polish helpers to block cloud fallbacks when privacy is enabled.
+- **Async STT Cancellation (#198)**: Track active operation ID across async STT processing to prevent late insertion or auto-sending of canceled speech.
+- **Updater Lock Hygiene (#205)**: Preserve unparsed or empty lockfiles during atomic lock checks in plugin updater to prevent premature lock deletion.
+- **Updater Timeout Escalation (#206)**: Await child process exit on updater timeout and escalate SIGTERM to SIGKILL after 1s grace period.
+
 ## 0.9.8
 
 ### Fixed

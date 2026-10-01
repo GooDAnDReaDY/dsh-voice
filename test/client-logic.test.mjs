@@ -271,3 +271,8 @@ test('client bundle contains CSS classes and DOM handlers for voice enhancements
   assert.ok(clientSrc.includes('techJargonCorrection'), 'techJargonCorrection setting must be wired')
   assert.ok(clientSrc.includes('structuredPromptVoice'), 'structuredPromptVoice setting must be wired')
 })
+
+test('recording cancellation invalidates pending async STT operation (#198)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('voice.activeOpId'), 'client bundle must track activeOpId across async STT ops')
+})

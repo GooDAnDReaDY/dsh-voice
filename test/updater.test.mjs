@@ -144,6 +144,19 @@ test('package.json.lock lifecycle and process alive detection (#176)', () => {
     assert.equal(isProcessAlive(9999999), false)
     assert.equal(isProcessAlive(null), false)
     assert.equal(isProcessAlive(-1), false)
+
+    // 6. Unparsed or empty lock file is preserved and reports locked (#205)
+    writeFileSync(lockFile, '', 'utf8')
+    const emptyCheck = checkProfileLock(dir)
+    assert.equal(emptyCheck.locked, true)
+    assert.equal(emptyCheck.pid, null)
+    assert.equal(existsSync(lockFile), true, 'empty lockfile must be preserved')
+
+    writeFileSync(lockFile, 'invalid-json-content', 'utf8')
+    const unparsedCheck = checkProfileLock(dir)
+    assert.equal(unparsedCheck.locked, true)
+    assert.equal(unparsedCheck.pid, null)
+    assert.equal(existsSync(lockFile), true, 'unparsed lockfile must be preserved')
   } finally {
     try { rmSync(dir, { recursive: true, force: true }) } catch { /* ignore */ }
   }

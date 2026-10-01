@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.10
+
+### Fixed
+- **ASR Shell Compatibility (#191)**: Support modern DSH 0.2 `ctx.shell.execute` and `ShellExecution` lifecycle for local Whisper and SenseVoice engine autostart.
+- **ASR Start Latch (#192)**: Ensure `startingWhisper` and `startingSensevoice` latches are unconditionally released via try/finally across all early exit paths.
+- **SenseVoice Settings Persistence (#193)**: Persist SenseVoice installer model path and autostart configuration via modern `SettingsForms` `settingsService` adapter.
+- **Composer Reload Settings Sync (#194)**: Synchronize `vadSilenceMs` and `autoSendMs` from host `/status` on page reload without requiring the user to open the settings card.
+
 ## 0.9.9
 
 ### Fixed

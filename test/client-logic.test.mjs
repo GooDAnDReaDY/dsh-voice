@@ -276,3 +276,9 @@ test('recording cancellation invalidates pending async STT operation (#198)', as
   const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
   assert.ok(clientSrc.includes('voice.activeOpId'), 'client bundle must track activeOpId across async STT ops')
 })
+
+test('composer reload synchronizes vadSilenceMs and autoSendMs from host status (#194)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('vadSilenceMs: Number(data && data.modes && data.modes.dictation && data.modes.dictation.vadSilenceMs)'), 'composer must sync vadSilenceMs from /status')
+  assert.ok(clientSrc.includes('autoSendMs: Number(data && data.modes && data.modes.message && data.modes.message.autoSendMs)'), 'composer must sync autoSendMs from /status')
+})

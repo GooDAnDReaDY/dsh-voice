@@ -125,3 +125,9 @@
   - Modular architecture decomposition (#180): Refactored monolithic lib/index.js (reduced from 693 to 502 lines, well under the 600-line modularity threshold) by decomposing Schemastery schemas (ChainEntry, CustomProvider, BaseConfig) into lib/schema.js and the transcribe_audio tool registration and MIME mappings into lib/tool.js.
   - Process lifecycle termination on respawn (#181): In lib/index.js (startWhisper, startSensevoice), added explicit termination checks (if (child && typeof child.kill === 'function') { child.kill(); child = null }) before spawning a new process via ctx.shell.start(), preventing orphaned zombie processes and port contention (EADDRINUSE).
 
+
+- 2026-10-02 — WebGPU/WASM Whisper in browser and SBC NPU host acceleration (#168):
+  - Client-side offline WebGPU Whisper (`browser-webgpu`): Added provider key `browser-webgpu` in `lib/providers.js` and `lib/client-src/35-webgpu.js`. Checks `navigator.gpu` presence and executes in-browser transcription using compact quantized Whisper models without sending audio over the network.
+  - Transparent graceful fallback: When WebGPU is not supported or initialization fails, `sendAudio` automatically falls through to the host fallback chain (/dsh-voice/transcribe) without interrupting user recording.
+  - Local engine compatibility: `buildProviderOrder` in `lib/transcribe-core.js` includes `browser-webgpu` in `localEngines`, allowing fully offline operation under `localOnly: true`.
+  - SBC NPU & multi-thread acceleration: Added `sensevoiceProvider` (options: `cpu`, `rknpu` for Rockchip RK3588 NPU, `openvino`, `cuda`) and `sensevoiceThreads` in `lib/schema.js` and `buildSensevoiceArgs` in `lib/sensevoice-installer.js` to run sherpa-onnx directly on ARM SBC NPUs.

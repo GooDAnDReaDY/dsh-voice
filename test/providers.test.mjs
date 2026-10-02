@@ -18,7 +18,7 @@ function depsWith(fetchImpl, key = 'secret') {
 }
 
 test('exports all built-in keys and default models', () => {
-  assert.deepEqual(PROVIDER_KEYS, ['browser', 'deepgram', 'groq', 'hf', 'local-whisper', 'sensevoice'])
+  assert.deepEqual(PROVIDER_KEYS, ['browser', 'browser-webgpu', 'deepgram', 'groq', 'hf', 'local-whisper', 'sensevoice'])
   assert.equal(DEFAULT_MODELS.groq, 'whisper-large-v3-turbo')
   assert.equal(DEFAULT_MODELS.sensevoice, 'SenseVoiceSmall')
 })
@@ -30,6 +30,16 @@ test('browser does not run on the host and yields to the next provider', async (
   const out = await providers.browser()
   assert.equal(out.ok, false)
   assert.equal(out.provider, 'browser')
+  assert.match(out.reason, /recognition runs in the page/)
+})
+
+test('browser-webgpu does not run on the host and yields to the next provider', async () => {
+  const providers = makeProviders(depsWith(async () => { throw new Error('сеть трогать не должны') }), {
+    bytes, mime: 'audio/webm', lang: 'ru', signal: undefined, models: {},
+  })
+  const out = await providers['browser-webgpu']()
+  assert.equal(out.ok, false)
+  assert.equal(out.provider, 'browser-webgpu')
   assert.match(out.reason, /recognition runs in the page/)
 })
 

@@ -132,3 +132,37 @@ test('lib/client.js contains global hotkey cleanup and preventDefault logic (#17
   assert.ok(content.includes('isAllowedInEditable'), 'must check isAllowedInEditable')
   assert.ok(content.includes('event.preventDefault()'), 'must call event.preventDefault() on hotkey activation')
 })
+
+function isHotkeyRelease(event, name) {
+  if (!event || !name) return false
+  if (typeof name === 'string' && name.includes('+')) {
+    const parts = name.split('+')
+    if (event.code === parts[parts.length - 1] || event.key === parts[parts.length - 1]) return true
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (event.key === parts[i] || event.code === parts[i]) return true
+    }
+    return false
+  }
+  return event.code === name || event.key === name
+}
+
+test('isHotkeyRelease detects release when modifier is released first (#196)', () => {
+  // Ctrl+Space combination: releasing Ctrl first
+  assert.equal(isHotkeyRelease({ key: 'Control' }, 'Control+Space'), true)
+  // Releasing Space first
+  assert.equal(isHotkeyRelease({ code: 'Space', key: ' ' }, 'Control+Space'), true)
+  // Irrelevant key up does not match
+  assert.equal(isHotkeyRelease({ key: 'Shift' }, 'Control+Space'), false)
+
+  // Alt+KeyV combination: releasing Alt first
+  assert.equal(isHotkeyRelease({ key: 'Alt' }, 'Alt+KeyV'), true)
+  assert.equal(isHotkeyRelease({ code: 'KeyV' }, 'Alt+KeyV'), true)
+
+  // Single key hotkey
+  assert.equal(isHotkeyRelease({ code: 'F8' }, 'F8'), true)
+})
+
+test('lib/client.js includes isHotkeyRelease helper for combo keyup (#196)', async () => {
+  const content = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(content.includes('isHotkeyRelease'), 'must contain isHotkeyRelease helper')
+})

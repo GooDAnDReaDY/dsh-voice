@@ -19,15 +19,24 @@ const VOICE_COMMANDS = [
 function applyVoiceCommands(text) {
   let s = text
   for (const [re, to] of VOICE_COMMANDS) s = s.replace(re, to)
-  return s.replace(/[ \t]*\n[ \t]*/g, '\n').replace(/[ \t]+/g, ' ').trim()
+  if (/^\n+$/.test(s)) return s
+  const lead = (s.match(/^\n+/) || [''])[0]
+  const trail = (s.match(/\n+$/) || [''])[0]
+  const trimmed = s.replace(/[ \t]*\n[ \t]*/g, '\n').replace(/[ \t]+/g, ' ').trim()
+  if (!trimmed) return lead || trail || ''
+  return lead + trimmed + trail
 }
 
 function tidyPhrase(text) {
-  let s = String(text || '').trim()
-  if (!s) return s
+  if (!text) return ''
+  if (/^\n+$/.test(text)) return text
+  const lead = (text.match(/^\n+/) || [''])[0]
+  const trail = (text.match(/\n+$/) || [''])[0]
+  let s = String(text).trim()
+  if (!s) return lead || trail || ''
   s = s.replace(/\s*,\s*/g, ', ')
-  s = s.replace(/(^|[.!?\n]\s+)([a-zа-яё])/gi, (m, lead, ch) => lead + ch.toUpperCase())
-  return s
+  s = s.replace(/(^|[.!?\n]\s+)([a-zа-яё])/gi, (m, l, ch) => l + ch.toUpperCase())
+  return lead + s + trail
 }
 
 test('tidyPhrase trims and formats comma spacing', () => {
@@ -281,4 +290,47 @@ test('composer reload synchronizes vadSilenceMs and autoSendMs from host status 
   const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
   assert.ok(clientSrc.includes('vadSilenceMs: Number(data && data.modes && data.modes.dictation && data.modes.dictation.vadSilenceMs)'), 'composer must sync vadSilenceMs from /status')
   assert.ok(clientSrc.includes('autoSendMs: Number(data && data.modes && data.modes.message && data.modes.message.autoSendMs)'), 'composer must sync autoSendMs from /status')
+})
+
+test('push-to-talk button retains pointer capture and global release listeners during hold (#195)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('!hold.armed'), 'VoiceButtons must remain mounted during active hold')
+  assert.ok(clientSrc.includes('setPointerCapture'), 'VoiceButtons must capture pointer on hold')
+  assert.ok(clientSrc.includes("addEventListener('pointercancel'"), 'window pointercancel listener must be wired')
+})
+
+test('final dictation tail is sequenced through dictationQueue to preserve FIFO text order (#197)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('dictationQueue = dictationQueue.then(processTail)'), 'stopCurrent must sequence processTail via dictationQueue')
+  assert.ok(clientSrc.includes('await dictationQueue'), 'stopCurrent must await dictationQueue drainage')
+})
+
+test('browser speech recognizer stops restart on fatal error, aborts on wake word, and awaits stop finals (#202)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('stopped = true\n        try { recognition.abort()'), 'recognition.onerror must set stopped and abort on fatal errors')
+  assert.ok(clientSrc.includes('voice.browser.abort()'), 'wake-word transition must abort previous browser recognizer')
+  assert.ok(clientSrc.includes('Promise.resolve(b.stop()).then('), 'stopCurrent must await browser stop before reading finals')
+})
+
+test('spoken actions send and clear adapt to standard InputActions contract (#199)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('function clearDraft'), 'clearDraft helper must be defined')
+  assert.ok(clientSrc.includes('executeVoiceAction'), 'executeVoiceAction adapter must be defined')
+  assert.ok(!clientSrc.includes('voice.inputActions.send'), 'deprecated voice.inputActions.send must be removed')
+  assert.ok(!clientSrc.includes('voice.inputActions.clear'), 'deprecated voice.inputActions.clear must be removed')
+  assert.ok(clientSrc.includes("actions.setDraft('')"), 'clear must call actions.setDraft')
+})
+
+test('newline preservation across tidyPhrase, applyVoiceCommands, and draft insertion (#200)', async () => {
+  assert.equal(tidyPhrase('\n'), '\n')
+  assert.equal(tidyPhrase('\n\n'), '\n\n')
+  assert.equal(tidyPhrase('Первая строка\n'), 'Первая строка\n')
+  assert.equal(applyVoiceCommands('новая строка'), '\n')
+  assert.equal(applyVoiceCommands('абзац'), '\n\n')
+  assert.equal(applyVoiceCommands('Первая строка новая строка'), 'Первая строка\n')
+
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('function insertDraftText'), 'insertDraftText helper must be present')
+  assert.ok(clientSrc.includes("action === 'newline'"), 'newline action handling must be wired')
+  assert.ok(clientSrc.includes("draft.endsWith('\\n') || text.startsWith('\\n')"), 'newline boundary check must prevent extra spaces')
 })

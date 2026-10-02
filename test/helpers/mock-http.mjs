@@ -13,8 +13,10 @@ export function mockReq(method, body, headers = {}) {
     method,
     headers: {
       ...(body != null ? { 'content-type': 'application/json' } : {}),
+      'host': '127.0.0.1:3000',
       ...headers,
     },
+    socket: { remoteAddress: '127.0.0.1', destroyed: false },
     destroyed: false,
     on(event, cb) {
       if (event === 'data') dataCb = cb

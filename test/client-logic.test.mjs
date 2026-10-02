@@ -356,3 +356,13 @@ test('updater card does not report false upToDate when status is unknown or chec
   assert.ok(clientSrc.includes('updaterStatus.latestCheckFailed'), 'updater card must handle latestCheckFailed')
   assert.ok(clientSrc.includes('updateStatusUnknown'), 'unknown status fallback must be wired')
 })
+
+test('registerGlobalLifecycle attaches and disposes all 5 global event listeners symmetrically (#203)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('function registerGlobalLifecycle'), 'registerGlobalLifecycle must be defined')
+  assert.ok(clientSrc.includes("removeEventListener('dsh:tts:start'"), 'dsh:tts:start must have symmetrical cleanup')
+  assert.ok(clientSrc.includes("removeEventListener('dsh:tts:stop'"), 'dsh:tts:stop must have symmetrical cleanup')
+  assert.ok(clientSrc.includes("removeEventListener('dsh-voice:settings-saved'"), 'settings-saved must have symmetrical cleanup')
+  assert.ok(clientSrc.includes("removeEventListener('pagehide'"), 'pagehide must have symmetrical cleanup')
+  assert.ok(clientSrc.includes("removeEventListener('beforeunload'"), 'beforeunload must have symmetrical cleanup')
+})

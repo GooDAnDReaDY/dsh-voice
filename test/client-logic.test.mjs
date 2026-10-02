@@ -342,3 +342,10 @@ test('supported languages include canonical auto empty string and Chinese (#208)
   assert.ok(clientSrc.includes("modeVal(mode, 'language', '')"), 'default language lookup must use canonical empty string')
   assert.ok(clientSrc.includes('langAuto'), 'langAuto localization key must be present')
 })
+
+test('Web Speech browser recognizer resolves language according to environment policy (#201)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('function resolveBrowserRecognitionLang'), 'resolveBrowserRecognitionLang helper must be defined')
+  assert.ok(!clientSrc.includes("recognition.lang = options.lang && options.lang !== 'auto' ? options.lang : 'ru-RU'"), 'hardcoded ru-RU default must be removed')
+  assert.ok(clientSrc.includes('document.documentElement.lang') || clientSrc.includes('navigator.language'), 'document/navigator language must be respected for auto')
+})

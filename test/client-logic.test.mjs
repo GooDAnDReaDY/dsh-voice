@@ -295,3 +295,10 @@ test('final dictation tail is sequenced through dictationQueue to preserve FIFO 
   assert.ok(clientSrc.includes('dictationQueue = dictationQueue.then(processTail)'), 'stopCurrent must sequence processTail via dictationQueue')
   assert.ok(clientSrc.includes('await dictationQueue'), 'stopCurrent must await dictationQueue drainage')
 })
+
+test('browser speech recognizer stops restart on fatal error, aborts on wake word, and awaits stop finals (#202)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('stopped = true\n        try { recognition.abort()'), 'recognition.onerror must set stopped and abort on fatal errors')
+  assert.ok(clientSrc.includes('voice.browser.abort()'), 'wake-word transition must abort previous browser recognizer')
+  assert.ok(clientSrc.includes('Promise.resolve(b.stop()).then('), 'stopCurrent must await browser stop before reading finals')
+})

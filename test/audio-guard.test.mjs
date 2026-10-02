@@ -63,7 +63,7 @@ test('validateAudioPath rejects outside-root paths before stat or read (#152)', 
     const res = await validateAudioPath(legit, [safeRoot])
     assert.equal(res.real, fs.realpathSync(legit))
   } finally {
-    fs.rmSync(safeRoot, { recursive: true, force: true })
+    fs.rmSync(safeRoot, { recursive: true })
   }
 })
 
@@ -87,8 +87,8 @@ test('validateAudioPath rejects symlink escapes outside allowed roots (#152)', a
     // On systems where symlink creation requires admin privileges, skip symlink test
     if (err.code !== 'EPERM') throw err
   } finally {
-    fs.rmSync(safeRoot, { recursive: true, force: true })
-    fs.rmSync(outsideDir, { recursive: true, force: true })
+    fs.rmSync(safeRoot, { recursive: true })
+    fs.rmSync(outsideDir, { recursive: true })
   }
 })
 

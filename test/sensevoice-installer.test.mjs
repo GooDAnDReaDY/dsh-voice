@@ -85,7 +85,7 @@ test('downloadArchive writes the response body and closes the file', async () =>
     assert.equal((await readFile(dest)).toString(), 'sensevoice-bytes')
   } finally {
     globalThis.fetch = previous
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true })
   }
 })
 

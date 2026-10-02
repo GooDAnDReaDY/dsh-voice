@@ -151,12 +151,13 @@ Quality batch after the v0.8.18 review (Gitea #79–#87, PR #88):
 
 | Provider Key | Service Backend | Default Model | Credential Ref | Features & Notes |
 |---|---|---|---|---|
+| `browser-webgpu` | In-Browser WebGPU/WASM Whisper | `onnx-community/whisper-tiny` | *None* | 100% private offline client-side GPU transcription; falls back to server chain |
 | `browser` | Web Speech API | Native Browser | *None* | Zero latency, floating live captions in Chrome (vendor server-based; not offline) |
 | `deepgram` | Deepgram API | `nova-2` | `DEEPGRAM_API_KEY` | Ultra-fast cloud transcription |
 | `groq` | Groq Whisper | `whisper-large-v3-turbo` | `GROQ_API_KEY` | Near-instant inference speed |
 | `hf` | HuggingFace Inference | `openai/whisper-large-v3` | `HF_TOKEN` | High-accuracy open Whisper |
 | `local-whisper` | Local whisper.cpp | Server defined | *None* | 100% private, offline, no internet needed |
-| `sensevoice` | SenseVoice-ONNX / Sherpa-ONNX | `SenseVoiceSmall` | *None* | Ultra-fast (~50ms) local non-autoregressive STT |
+| `sensevoice` | SenseVoice-ONNX / Sherpa-ONNX | `SenseVoiceSmall` | *None* | Ultra-fast (~50ms) local STT; supports Rockchip RK3588 NPU (rknpu), OpenVINO, CUDA |
 
 ### 🚀 Ready-Made Presets (Plug & Play)
 

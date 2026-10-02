@@ -366,3 +366,12 @@ test('registerGlobalLifecycle attaches and disposes all 5 global event listeners
   assert.ok(clientSrc.includes("removeEventListener('pagehide'"), 'pagehide must have symmetrical cleanup')
   assert.ok(clientSrc.includes("removeEventListener('beforeunload'"), 'beforeunload must have symmetrical cleanup')
 })
+
+test('settings CSS rules are strictly scoped to .dvo-settings-root and managed via lifecycle (#211)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('.dvo-settings-root .cb-section-card'), 'cb-section-card must be scoped to dvo-settings-root')
+  assert.ok(clientSrc.includes('.dvo-settings-root .cb-btn'), 'cb-btn must be scoped to dvo-settings-root')
+  assert.ok(!clientSrc.includes("'.cb-page{"), 'naked .cb-page rule must not exist')
+  assert.ok(!clientSrc.includes("'.cb-btn{"), 'naked .cb-btn rule must not exist')
+  assert.ok(clientSrc.includes('function installSettingsCss'), 'installSettingsCss must be defined')
+})

@@ -308,3 +308,64 @@ test('POST /dsh-voice/config also accepted as alias for PUT', async () => {
   assert.equal(res.statusCode, 200)
   assert.equal(liveCfg.hotkey, 'KeyZ')
 })
+test('PUT /dsh-voice/config fails when legacy scope.set throws/rejects (#204)', async () => {
+  const { ctx, getRoute } = createFakeCtx()
+  const mockScope = {
+    set: async () => {
+      throw new Error('disk full or permission denied')
+    },
+  }
+
+  registerConfigRoutes(ctx, {
+    NS: 'dsh-voice',
+    live: () => ({ hotkey: 'Control' }),
+    getSettingsService: () => null,
+    getScope: () => mockScope,
+    validateConfig: (c) => c,
+    triggerAutostart: () => {},
+  })
+
+  const route = getRoute()
+  const req = mockReq('PUT', JSON.stringify({ hotkey: 'F8' }))
+  req.socket = { remoteAddress: '127.0.0.1' }
+  req.fire()
+  const res = mockRes()
+  await route.handler(req, res)
+
+  assert.equal(res.statusCode, 500)
+  const body = jsonBody(res)
+  assert.equal(body.ok, false)
+  assert.equal(body.error.code, 'save')
+  assert.match(body.error.message, /disk full or permission denied/)
+})
+
+test('PUT /dsh-voice/config does not write to legacy scope if settingsService succeeded (#204)', async () => {
+  const { ctx, getRoute } = createFakeCtx()
+  let scopeCalled = false
+  const mockSettings = {
+    replace: async () => {},
+  }
+  const mockScope = {
+    replace: async () => { scopeCalled = true },
+    set: async () => { scopeCalled = true },
+  }
+
+  registerConfigRoutes(ctx, {
+    NS: 'dsh-voice',
+    live: () => ({ hotkey: 'Control' }),
+    getSettingsService: () => mockSettings,
+    getScope: () => mockScope,
+    validateConfig: (c) => c,
+    triggerAutostart: () => {},
+  })
+
+  const route = getRoute()
+  const req = mockReq('PUT', JSON.stringify({ hotkey: 'F8' }))
+  req.socket = { remoteAddress: '127.0.0.1' }
+  req.fire()
+  const res = mockRes()
+  await route.handler(req, res)
+
+  assert.equal(res.statusCode, 200)
+  assert.equal(scopeCalled, false, 'scope must not be called when settingsService succeeded')
+})

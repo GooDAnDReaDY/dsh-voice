@@ -76,7 +76,7 @@ graph LR
 * 🎮 **Tactile Push-to-Talk**:
   * **Mouse**: Hold the wave button — releasing sends the message; dragging pointer away discards.
   * **Keyboard**: Hold <kbd>Ctrl</kbd> (or custom hotkey) for hands-free speaking; press <kbd>Esc</kbd> to cancel.
-* ⚡ **Zero-Latency In-Browser Captions (`browser`)**: Chrome Web Speech API recognition runs 100% locally with live floating captions as you speak.
+* ⚡ **Live In-Browser Captions (`browser`)**: Web Speech API speech-to-text with real-time floating captions as you speak (Note: standard browser recognition typically streams audio to vendor servers like Google in Chrome; for true 100% offline privacy, use local `whisper` or `sensevoice`).
 * 🛡️ **Ironclad Multi-Provider Fallbacks**: If your primary cloud provider runs out of credits or hits a 429 rate limit, requests seamlessly fail over down the chain.
 * 🧠 **Context Glossary Injection**: Automatically extracts code variables and identifiers from your composer draft to steer STT model accuracy on technical jargon.
 * 🎵 **Embedded Audio Player**: Preview, scrubber, and playback of your recorded voice message directly in chat and the composer dock.
@@ -151,7 +151,7 @@ Quality batch after the v0.8.18 review (Gitea #79–#87, PR #88):
 
 | Provider Key | Service Backend | Default Model | Credential Ref | Features & Notes |
 |---|---|---|---|---|
-| `browser` | Web Speech API | Native Browser | *None* | Zero latency, floating live captions in Chrome |
+| `browser` | Web Speech API | Native Browser | *None* | Zero latency, floating live captions in Chrome (vendor server-based; not offline) |
 | `deepgram` | Deepgram API | `nova-2` | `DEEPGRAM_API_KEY` | Ultra-fast cloud transcription |
 | `groq` | Groq Whisper | `whisper-large-v3-turbo` | `GROQ_API_KEY` | Near-instant inference speed |
 | `hf` | HuggingFace Inference | `openai/whisper-large-v3` | `HF_TOKEN` | High-accuracy open Whisper |

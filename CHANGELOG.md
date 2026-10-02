@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.13
+
+### Fixed
+- **HTTP 413 Connection Teardown (#207)**: Deliver clean HTTP 413 JSON responses with `Connection: close` and gracefully drain/close sockets on oversized request bodies, eliminating premature socket destruction and client `ECONNRESET`.
+- **UI Localization Coverage (#212)**: Localize previously hardcoded interface strings (`Voice input`, `Assistant speaking (gated mode)`, `Update completed successfully.`, `(spoken -> replacement)`, `Error:`) through the locale registry `t()` helper, adding symmetric translations to English and Chinese dictionaries.
+- **Web Speech Privacy Disclosures (#210)**: Update documentation across `README.md`, `README.ru.md`, and `README.zh.md` to accurately reflect Web Speech API network transmission (vendor cloud processing in Chrome) versus true offline engines (`whisper`, `sensevoice`).
+- **Design Contract Synchronization (#187)**: Align `docs/design/DESIGN.md` with live production endpoints (`/config`, `/sensevoice-installer`, `/api/dsh-voice/update`) and modern UI slots (`plugins.item`, `plugins.row.config`).
+- **Syntax Gate & Packaging Enforcement (#103)**: Introduce dedicated `scripts/lint.mjs` checking syntax across all files in `lib/`, `scripts/`, and `test/`, and enforce `pack:check` size limits and linting in `pretest`.
+- **Behavioral Route & Production Logic Testing (#97, #214)**: Add full behavioral test coverage for host routes (`/status`, `/polish`, `/transcribe`), and eliminate duplicate algorithms in tests by testing real production modules (`tool.js`, `transcribe-core.js`, `client._test`).
+
 ## 0.9.12
 
 ### Fixed

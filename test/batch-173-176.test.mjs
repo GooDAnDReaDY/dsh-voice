@@ -126,7 +126,7 @@ test('Issue #176: package.json.lock handling and supply chain options', async ()
     const check3 = checkProfileLock(dir)
     assert.equal(check3.locked, true)
   } finally {
-    try { rmSync(dir, { recursive: true, force: true }) } catch { /* ignore */ }
+    try { rmSync(dir, { recursive: true }) } catch { /* ignore */ }
   }
 
   // Verify updater does not include minimumReleaseAge=0

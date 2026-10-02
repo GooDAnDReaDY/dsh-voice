@@ -26,7 +26,8 @@ test("lib/client.js contains unified clinebot design classes and ErrorBoundary",
 test("lib/index.js registers correct routes and tool names", () => {
   const indexPath = path.join(rootDir, "lib", "index.js");
   assert.ok(fs.existsSync(indexPath), "lib/index.js should exist");
-  const content = fs.readFileSync(indexPath, "utf8");
+  const hostRoutesPath = path.join(rootDir, "lib", "host-routes.js");
+  const content = fs.readFileSync(indexPath, "utf8") + (fs.existsSync(hostRoutesPath) ? fs.readFileSync(hostRoutesPath, "utf8") : "");
 
   assert.ok(content.includes("path: '/dsh-voice/status'"), "registers /dsh-voice/status route");
   assert.ok(content.includes("registerConfigRoutes"), "registers config route handler");

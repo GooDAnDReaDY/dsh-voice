@@ -158,7 +158,7 @@ test('package.json.lock lifecycle and process alive detection (#176)', () => {
     assert.equal(unparsedCheck.pid, null)
     assert.equal(existsSync(lockFile), true, 'unparsed lockfile must be preserved')
   } finally {
-    try { rmSync(dir, { recursive: true, force: true }) } catch { /* ignore */ }
+    try { rmSync(dir, { recursive: true }) } catch { /* ignore */ }
   }
 })
 

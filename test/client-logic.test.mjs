@@ -19,15 +19,24 @@ const VOICE_COMMANDS = [
 function applyVoiceCommands(text) {
   let s = text
   for (const [re, to] of VOICE_COMMANDS) s = s.replace(re, to)
-  return s.replace(/[ \t]*\n[ \t]*/g, '\n').replace(/[ \t]+/g, ' ').trim()
+  if (/^\n+$/.test(s)) return s
+  const lead = (s.match(/^\n+/) || [''])[0]
+  const trail = (s.match(/\n+$/) || [''])[0]
+  const trimmed = s.replace(/[ \t]*\n[ \t]*/g, '\n').replace(/[ \t]+/g, ' ').trim()
+  if (!trimmed) return lead || trail || ''
+  return lead + trimmed + trail
 }
 
 function tidyPhrase(text) {
-  let s = String(text || '').trim()
-  if (!s) return s
+  if (!text) return ''
+  if (/^\n+$/.test(text)) return text
+  const lead = (text.match(/^\n+/) || [''])[0]
+  const trail = (text.match(/\n+$/) || [''])[0]
+  let s = String(text).trim()
+  if (!s) return lead || trail || ''
   s = s.replace(/\s*,\s*/g, ', ')
-  s = s.replace(/(^|[.!?\n]\s+)([a-zа-яё])/gi, (m, lead, ch) => lead + ch.toUpperCase())
-  return s
+  s = s.replace(/(^|[.!?\n]\s+)([a-zа-яё])/gi, (m, l, ch) => l + ch.toUpperCase())
+  return lead + s + trail
 }
 
 test('tidyPhrase trims and formats comma spacing', () => {
@@ -310,4 +319,18 @@ test('spoken actions send and clear adapt to standard InputActions contract (#19
   assert.ok(!clientSrc.includes('voice.inputActions.send'), 'deprecated voice.inputActions.send must be removed')
   assert.ok(!clientSrc.includes('voice.inputActions.clear'), 'deprecated voice.inputActions.clear must be removed')
   assert.ok(clientSrc.includes("actions.setDraft('')"), 'clear must call actions.setDraft')
+})
+
+test('newline preservation across tidyPhrase, applyVoiceCommands, and draft insertion (#200)', async () => {
+  assert.equal(tidyPhrase('\n'), '\n')
+  assert.equal(tidyPhrase('\n\n'), '\n\n')
+  assert.equal(tidyPhrase('Первая строка\n'), 'Первая строка\n')
+  assert.equal(applyVoiceCommands('новая строка'), '\n')
+  assert.equal(applyVoiceCommands('абзац'), '\n\n')
+  assert.equal(applyVoiceCommands('Первая строка новая строка'), 'Первая строка\n')
+
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('function insertDraftText'), 'insertDraftText helper must be present')
+  assert.ok(clientSrc.includes("action === 'newline'"), 'newline action handling must be wired')
+  assert.ok(clientSrc.includes("draft.endsWith('\\n') || text.startsWith('\\n')"), 'newline boundary check must prevent extra spaces')
 })

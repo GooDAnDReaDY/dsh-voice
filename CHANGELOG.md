@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.9.17
+
+### Fixed
+- **VoiceSection Render TDZ ReferenceError (#218)**: Reordered state and status fetch declarations before initializing `useSensevoiceInstaller`, eliminating crash on settings view load.
+- **VAD Dictation cutPhrase opId ReferenceError (#219)**: Correctly preserved and resolved `opId` in `openMic` and `cutPhrase`, preventing speech segment cutting crashes.
+- **WebGPU Chain Ordering & Empty Transcription Fallthrough (#220)**: Respected exact `_activeChain` priority, falling through to host STT on empty WebGPU recognition and querying host STT first when WebGPU is placed as fallback.
+- **Sherpa-ONNX RKNN Integration (#221)**: Standardized RK3588 NPU acceleration flags to official `--provider=rknn` and automatically normalized legacy `rknpu` values.
+- **Multi-Model WebGPU Pipeline Caching (#222)**: Replaced single pipeline reference with multi-model cache Map keyed by model name, correctly syncing `webgpuModel` and `localOnly` through `modeChain`.
+- **Modular Server Daemon Extraction (#180)**: Decomposed daemon process management into `lib/local-daemon.js`, keeping `lib/index.js` and all library modules strictly under 600 lines.
+- **Asynchronous Daemon Shell Execution (#191)**: Awaited `ctx.shell.execute` and handled process spawn failures immediately without incurring 30s timeout delays.
+- **Browser STT & Disposal Lifecycle Guards (#198, #203)**: Bound recognition actions to operation IDs and set `voice.disposed = true` on unmount to block late insertions.
+- **Updater Lock Removal Race Protection (#205)**: Re-verified lock file PID before unlinking stale lock files, preventing deletion of active locks held by successor processes.
+- **Local-Only Policy Enforcement (#209)**: Preserved `localOnly` setting in client `modeChain` and filtered out external cloud-based browser recognition when enabled.
+- **Authentic Behavioral Execution Tests (#214)**: Added comprehensive Node.js VM execution test suite covering real client components and daemon lifecycle.
+
 ## 0.9.13
 
 ### Fixed

@@ -151,12 +151,13 @@ Quality-батч после ревью v0.8.18 (Gitea #79–#87, PR #88):
 
 | Ключ | Сервис | Модель по умолчанию | Переменная секрета | Особенности |
 |---|---|---|---|---|
+| `browser-webgpu` | WebGPU/WASM Whisper в браузере | `onnx-community/whisper-tiny` | *Не требуется* | 100% приватное офлайн распознавание на GPU клиента; авто-фоллбек на серверную цепочку |
 | `browser` | Web Speech API | Нативная в браузере | *Не требуется* | Нулевая задержка, живые субтитры в Chrome (обработка на серверах вендора; не является офлайн) |
 | `deepgram` | Deepgram API | `nova-2` | `DEEPGRAM_API_KEY` | Сверхбыстрая облачная транскрипция |
 | `groq` | Groq Whisper | `whisper-large-v3-turbo` | `GROQ_API_KEY` | Мгновенная скорость генерации |
 | `hf` | HuggingFace Inference | `openai/whisper-large-v3` | `HF_TOKEN` | Высокоточный облачный Whisper |
 | `local-whisper` | Локальный whisper.cpp | из параметров сервера | *Не требуется* | 100% приватность, оффлайн, без интернета |
-| `sensevoice` | SenseVoice-ONNX / Sherpa-ONNX | `SenseVoiceSmall` | *Не требуется* | Сверхбыстрый (~50мс) локальный неавторегрессивный STT |
+| `sensevoice` | SenseVoice-ONNX / Sherpa-ONNX | `SenseVoiceSmall` | *Не требуется* | Сверхбыстрый (~50мс) локальный STT; ускорение на Rockchip RK3588 NPU (rknpu), OpenVINO, CUDA |
 
 ### 🚀 Готовые пресеты (Plug & Play)
 

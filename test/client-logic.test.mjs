@@ -282,3 +282,10 @@ test('composer reload synchronizes vadSilenceMs and autoSendMs from host status 
   assert.ok(clientSrc.includes('vadSilenceMs: Number(data && data.modes && data.modes.dictation && data.modes.dictation.vadSilenceMs)'), 'composer must sync vadSilenceMs from /status')
   assert.ok(clientSrc.includes('autoSendMs: Number(data && data.modes && data.modes.message && data.modes.message.autoSendMs)'), 'composer must sync autoSendMs from /status')
 })
+
+test('push-to-talk button retains pointer capture and global release listeners during hold (#195)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('!hold.armed'), 'VoiceButtons must remain mounted during active hold')
+  assert.ok(clientSrc.includes('setPointerCapture'), 'VoiceButtons must capture pointer on hold')
+  assert.ok(clientSrc.includes("addEventListener('pointercancel'"), 'window pointercancel listener must be wired')
+})

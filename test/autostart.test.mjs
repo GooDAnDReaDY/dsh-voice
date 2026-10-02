@@ -22,11 +22,12 @@ test('lib/index.js wires autostart to deferred settings injection and updates', 
 })
 
 test('startWhisper and startSensevoice have 30s timeout and premature exit guards', () => {
+  const daemonSrc = readFileSync(new URL('../lib/local-daemon.js', import.meta.url), 'utf8')
   // Polling loop 60 * 500ms = 30s in startWhisper
-  assert.match(indexSrc, /for \(let i = 0; i < 60; i\+\+\) \{[\s\S]*?whisperAlive\(\)[\s\S]*?child\.exitCode/, 'startWhisper must poll up to 60 iterations with premature exit check')
+  assert.match(daemonSrc, /for \(let i = 0; i < 60; i\+\+\) \{[\s\S]*?whisperAlive\(\)[\s\S]*?child\.exitCode/, 'startWhisper must poll up to 60 iterations with premature exit check')
 
   // Polling loop 60 * 500ms = 30s in startSensevoice
-  assert.match(indexSrc, /for \(let i = 0; i < 60; i\+\+\) \{[\s\S]*?sensevoiceAlive\(\)[\s\S]*?sensevoiceChild\.exitCode/, 'startSensevoice must poll up to 60 iterations with premature exit check')
+  assert.match(daemonSrc, /for \(let i = 0; i < 60; i\+\+\) \{[\s\S]*?sensevoiceAlive\(\)[\s\S]*?sensevoiceChild\.exitCode/, 'startSensevoice must poll up to 60 iterations with premature exit check')
 })
 
 test('autostart dispatch lifecycle executes production apply and responds to settings watch (#214)', async () => {
@@ -112,16 +113,17 @@ test('autostart dispatch lifecycle executes production apply and responds to set
 })
 
 test('startWhisper and startSensevoice support modern DSH 0.2 shell.execute contract (#191)', () => {
-  const indexSource = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
-  assert.match(indexSource, /ctx\.shell\?\.execute/, 'must support ctx.shell.execute')
-  assert.match(indexSource, /child\.done && typeof child\.done\.then === 'function'/, 'must handle ShellExecution.done promise')
-  assert.match(indexSource, /child\.status === 'exited' \|\| child\.status === 'failed'/, 'must handle ShellExecution status states')
+  const daemonSource = readFileSync(new URL('../lib/local-daemon.js', import.meta.url), 'utf8')
+  assert.match(daemonSource, /ctx\.shell\?\.execute/, 'must support ctx.shell.execute')
+  assert.match(daemonSource, /child = await ctx\.shell\.execute/, 'must await ctx.shell.execute Promise (#191)')
+  assert.match(daemonSource, /child\.done && typeof child\.done\.then === 'function'/, 'must handle ShellExecution.done promise')
+  assert.match(daemonSource, /child\.status === 'exited' \|\| child\.status === 'failed'/, 'must handle ShellExecution status states')
 })
 
 test('startWhisper and startSensevoice release starting flag across all exit paths (#192)', () => {
-  const indexSource = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
+  const daemonSource = readFileSync(new URL('../lib/local-daemon.js', import.meta.url), 'utf8')
   // Check that try block begins immediately after starting latch in startWhisper
-  assert.match(indexSource, /startingWhisper = true\s*try \{/, 'startWhisper must wrap all checks in try/finally')
+  assert.match(daemonSource, /startingWhisper = true\s*try \{/, 'startWhisper must wrap all checks in try/finally')
   // Check that try block begins immediately after starting latch in startSensevoice
-  assert.match(indexSource, /startingSensevoice = true\s*try \{/, 'startSensevoice must wrap all checks in try/finally')
+  assert.match(daemonSource, /startingSensevoice = true\s*try \{/, 'startSensevoice must wrap all checks in try/finally')
 })

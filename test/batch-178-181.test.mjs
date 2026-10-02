@@ -82,13 +82,16 @@ test('Issue #180: lib/index.js is decomposed and stays under 600 lines threshold
 })
 
 test('Issue #181: stale child processes are killed before respawning whisper or sensevoice', () => {
-  const indexSrc = fs.readFileSync(path.join(rootDir, 'lib', 'index.js'), 'utf8')
+  const daemonPath = path.join(rootDir, 'lib', 'local-daemon.js')
+  const daemonSrc = fs.existsSync(daemonPath)
+    ? fs.readFileSync(daemonPath, 'utf8')
+    : fs.readFileSync(path.join(rootDir, 'lib', 'index.js'), 'utf8')
   assert.ok(
-    indexSrc.includes('if (child && typeof child.kill === \'function\')'),
+    daemonSrc.includes('if (child && typeof child.kill === \'function\')'),
     'startWhisper must check and kill stale child before starting new process'
   )
   assert.ok(
-    indexSrc.includes('if (sensevoiceChild && typeof sensevoiceChild.kill === \'function\')'),
+    daemonSrc.includes('if (sensevoiceChild && typeof sensevoiceChild.kill === \'function\')'),
     'startSensevoice must check and kill stale sensevoiceChild before starting new process'
   )
 })

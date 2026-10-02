@@ -40,17 +40,27 @@ test('lib/transcribe-core.js keeps browser-webgpu under localOnly mode', () => {
   assert.deepEqual(order, ['browser-webgpu', 'local-whisper'], 'localOnly must keep browser-webgpu and local-whisper, dropping groq')
 })
 
-test('buildSensevoiceArgs supports Rockchip RK3588 NPU (rknpu) and thread count', () => {
+test('buildSensevoiceArgs supports Rockchip RK3588 NPU (rknn) and thread count (#221)', () => {
   const cfg = {
-    sensevoiceModel: '/opt/models/sensevoice/model.int8.onnx',
-    sensevoiceProvider: 'rknpu',
+    sensevoiceModel: '/opt/models/sensevoice/model.rknn',
+    sensevoiceProvider: 'rknn',
     sensevoiceThreads: 8,
   }
   const args = buildSensevoiceArgs(cfg, '6006')
-  assert.ok(args.includes('--provider=rknpu'), 'must include --provider=rknpu')
+  assert.ok(args.includes('--provider=rknn'), 'must include sherpa official --provider=rknn')
   assert.ok(args.includes('--num-threads=8'), 'must include --num-threads=8')
   assert.ok(args.includes('--port=6006'), 'must include port')
   assert.ok(args.includes('--sense-voice-model='), 'must include model path')
+})
+
+test('buildSensevoiceArgs normalizes legacy rknpu to rknn provider (#221)', () => {
+  const cfg = {
+    sensevoiceModel: '/opt/models/sensevoice/model.rknn',
+    sensevoiceProvider: 'rknpu',
+    sensevoiceThreads: 4,
+  }
+  const args = buildSensevoiceArgs(cfg, '6006')
+  assert.ok(args.includes('--provider=rknn'), 'must normalize rknpu to --provider=rknn')
 })
 
 test('buildSensevoiceArgs default cpu provider omits provider flag for standard CPU', () => {

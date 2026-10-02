@@ -289,3 +289,9 @@ test('push-to-talk button retains pointer capture and global release listeners d
   assert.ok(clientSrc.includes('setPointerCapture'), 'VoiceButtons must capture pointer on hold')
   assert.ok(clientSrc.includes("addEventListener('pointercancel'"), 'window pointercancel listener must be wired')
 })
+
+test('final dictation tail is sequenced through dictationQueue to preserve FIFO text order (#197)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('dictationQueue = dictationQueue.then(processTail)'), 'stopCurrent must sequence processTail via dictationQueue')
+  assert.ok(clientSrc.includes('await dictationQueue'), 'stopCurrent must await dictationQueue drainage')
+})

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.9.11
+
+### Fixed
+- **Push-to-Talk Hold Gesture (#195)**: Keep `VoiceButtons` mounted during hold, retain pointer capture (`setPointerCapture`), and bind global window listeners for `pointerup`, `pointercancel`, and `blur` to prevent stuck recording states.
+- **Modifier-First Hotkey Release (#196)**: Detect modifier key release (`Control`, `Alt`, `Shift`, `Meta`) in compound hotkeys to cleanly terminate push-to-talk holds when the modifier is released before the main key.
+- **Dictation FIFO Tail Ordering (#197)**: Sequence the final audio chunk through `dictationQueue` to guarantee strict FIFO text insertion and prevent out-of-order text fragments.
+- **Browser Recognizer Lifecycle (#202)**: Set `stopped = true` and call `recognition.abort()` on fatal errors to prevent infinite restart loops, abort previous recognizer on wake-word transition, and await completion of the final audio segment upon stop.
+- **Spoken Action Handlers (#199)**: Unify spoken actions (`send`, `clear`) using standard `InputActions` contract (`submit()`, `setDraft('')`), reporting an error if the composer is unavailable.
+- **Spoken Newline Formatting (#200)**: Preserve newlines (`
+`, `
+
+`) across `tidyPhrase`, `applyVoiceCommands`, and `insertDraftText` without stripping whitespace or inserting spurious spaces.
+
 ## 0.9.10
 
 ### Fixed

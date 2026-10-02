@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.9.18
+
+### Fixed
+- **Browser STT Stop Lifecycle & Final Result Insertion (#225)**: Keep `activeOpId` active during normal `SpeechRecognition.stop()` by transitioning to `phase: 'finishing'`, ensuring the trailing final transcript chunk is safely appended to the initiating composer and queued for dispatch.
+- **Microphone Stream & Web Audio Node Leaks (#226)**: Wrap post-`getUserMedia` stream initialization in `openMic` with defensive try/catch, immediately terminating all tracks and closing partially created audio context nodes if `MediaRecorder` or audio graph construction fails.
+- **Strict FIFO Dictation Queue (#197)**: Sequentialize phrase chunk processing and tail segment insertion through an unbroken `dictationQueue` promise chain, preventing out-of-order text insertion when cutting long utterances.
+- **Composer Session Isolation (#198)**: Bind transcription results to the initiating composer target and insertion span, preventing late STT callbacks from leaking into switched active sessions.
+- **Post-Disposal Audio Dispatch Prevention (#203)**: Add strict disposal guards before and after `MediaRecorder.stop()` completion, preventing late stop events from triggering network requests or mutating plugin phase.
+- **Modern DSH 0.2 ShellExecution Contract (#191)**: Handle process state (`running`, `completed`, `killed`, `exited`, `failed`) and `done` promise in daemon management without false 30s timeouts, configuring `onExpiry: 'none'`.
+- **Middle-Chain WebGPU Fallback & Empty Result Fallthrough (#220)**: Execute head providers via host STT before delegating to in-browser WebGPU, falling through to remaining host providers if WebGPU returns empty text or errors.
+- **Concurrent In-Flight Model Load Deduplication (#222)**: Share in-flight model loading Promises in `_webGpuPipelines` across concurrent invocations to prevent redundant network downloads and memory allocations.
+- **Atomic Profile Lock Coordination (#205)**: Employ atomic file renaming (`renameSync`) during stale lock inspection to eliminate TOCTOU race windows against live successor processes.
+- **Modular Route & Hotkey Decomposition (#180)**: Extract HTTP endpoints to `lib/host-routes.js` (bringing `lib/index.js` to 201 lines) and extract hotkey matching to `lib/client-src/42-hotkey.js`, keeping all source files strictly under project limits.
+- **Strict Quality Enforcement & Force Flag Elimination (#214)**: Eliminate `force: true` options across file system operations and tests, verifying clean execution across 227 authentic behavioral tests.
+
 ## 0.9.17
 
 ### Fixed

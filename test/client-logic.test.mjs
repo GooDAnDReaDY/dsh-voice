@@ -302,3 +302,12 @@ test('browser speech recognizer stops restart on fatal error, aborts on wake wor
   assert.ok(clientSrc.includes('voice.browser.abort()'), 'wake-word transition must abort previous browser recognizer')
   assert.ok(clientSrc.includes('Promise.resolve(b.stop()).then('), 'stopCurrent must await browser stop before reading finals')
 })
+
+test('spoken actions send and clear adapt to standard InputActions contract (#199)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('function clearDraft'), 'clearDraft helper must be defined')
+  assert.ok(clientSrc.includes('executeVoiceAction'), 'executeVoiceAction adapter must be defined')
+  assert.ok(!clientSrc.includes('voice.inputActions.send'), 'deprecated voice.inputActions.send must be removed')
+  assert.ok(!clientSrc.includes('voice.inputActions.clear'), 'deprecated voice.inputActions.clear must be removed')
+  assert.ok(clientSrc.includes("actions.setDraft('')"), 'clear must call actions.setDraft')
+})

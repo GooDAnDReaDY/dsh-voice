@@ -334,3 +334,11 @@ test('newline preservation across tidyPhrase, applyVoiceCommands, and draft inse
   assert.ok(clientSrc.includes("action === 'newline'"), 'newline action handling must be wired')
   assert.ok(clientSrc.includes("draft.endsWith('\\n') || text.startsWith('\\n')"), 'newline boundary check must prevent extra spaces')
 })
+
+test('supported languages include canonical auto empty string and Chinese (#208)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes("code: ''"), 'canonical auto empty string must be present')
+  assert.ok(clientSrc.includes("code: 'zh'"), 'Chinese language code zh must be present')
+  assert.ok(clientSrc.includes("modeVal(mode, 'language', '')"), 'default language lookup must use canonical empty string')
+  assert.ok(clientSrc.includes('langAuto'), 'langAuto localization key must be present')
+})

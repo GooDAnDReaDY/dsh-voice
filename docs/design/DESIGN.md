@@ -22,7 +22,7 @@
   - `POST /dsh-voice/polish` (LLM-based transcript punctuation and cleanup)
   - `GET /dsh-voice/config`, `PUT /dsh-voice/config`, `POST /dsh-voice/config` (network configuration persistence)
   - `GET /dsh-voice/sensevoice-installer`, `POST /dsh-voice/sensevoice-installer` (1-click model download and health polling)
-  - `GET /api/@goodandready/dsh-voice/update`, `POST /api/@goodandready/dsh-voice/update` (1-click self-updater)
+  - `GET /api/dsh-voice/update`, `POST /api/dsh-voice/update` (1-click self-updater)
 - Agent Tools:
   - `transcribe_audio` (transcribes local audio files for AI agents with format validation and path confinement)
 - CLI: none.

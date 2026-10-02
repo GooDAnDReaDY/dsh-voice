@@ -349,3 +349,10 @@ test('Web Speech browser recognizer resolves language according to environment p
   assert.ok(!clientSrc.includes("recognition.lang = options.lang && options.lang !== 'auto' ? options.lang : 'ru-RU'"), 'hardcoded ru-RU default must be removed')
   assert.ok(clientSrc.includes('document.documentElement.lang') || clientSrc.includes('navigator.language'), 'document/navigator language must be respected for auto')
 })
+
+test('updater card does not report false upToDate when status is unknown or check failed (#213)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(!clientSrc.includes("'v' + ((updaterStatus && updaterStatus.currentVersion) || '0.9.6')"), 'hardcoded 0.9.6 fallback must be removed')
+  assert.ok(clientSrc.includes('updaterStatus.latestCheckFailed'), 'updater card must handle latestCheckFailed')
+  assert.ok(clientSrc.includes('updateStatusUnknown'), 'unknown status fallback must be wired')
+})

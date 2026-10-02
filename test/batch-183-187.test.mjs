@@ -70,7 +70,7 @@ test('batch-183-187: issue #187 - docs/design/DESIGN.md documents all live endpo
 
   assert.match(designSrc, /\/dsh-voice\/config/, 'DESIGN.md must document /config')
   assert.match(designSrc, /\/dsh-voice\/sensevoice-installer/, 'DESIGN.md must document /sensevoice-installer')
-  assert.match(designSrc, /api\/@goodandready\/dsh-voice\/update/, 'DESIGN.md must document updater endpoint')
+  assert.match(designSrc, /api\/dsh-voice\/update/, 'DESIGN.md must document updater endpoint')
   assert.match(designSrc, /transcribe_audio/, 'DESIGN.md must document transcribe_audio tool')
   assert.match(designSrc, /plugins\.item/, 'DESIGN.md must document plugins.item slot')
   assert.match(designSrc, /plugins\.row\.config/, 'DESIGN.md must document plugins.row.config slot')

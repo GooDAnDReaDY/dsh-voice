@@ -375,3 +375,55 @@ test('settings CSS rules are strictly scoped to .dvo-settings-root and managed v
   assert.ok(!clientSrc.includes("'.cb-btn{"), 'naked .cb-btn rule must not exist')
   assert.ok(clientSrc.includes('function installSettingsCss'), 'installSettingsCss must be defined')
 })
+
+
+test('EN and ZH locale dictionaries are symmetric and cover required UI keys (#212)', async () => {
+  const localeSrc = await readFile(path.join(root, 'lib/client-src/10-locale.js'), 'utf8')
+  
+  function extractKeys(src, dictName) {
+    const startPattern = `const ${dictName} = {`
+    const startIdx = src.indexOf(startPattern)
+    assert.ok(startIdx !== -1, `dict ${dictName} must exist`)
+    const endIdx = src.indexOf('\n    }', startIdx)
+    assert.ok(endIdx !== -1, `dict ${dictName} end must exist`)
+    const block = src.slice(startIdx, endIdx)
+    const keys = []
+    const re = /'([a-zA-Z0-9_-]+)':/g
+    let m
+    while ((m = re.exec(block)) !== null) {
+      keys.push(m[1])
+    }
+    return keys
+  }
+
+  const enKeys = extractKeys(localeSrc, 'en')
+  const zhKeys = extractKeys(localeSrc, 'zh')
+
+  assert.equal(enKeys.length, zhKeys.length, `en (${enKeys.length}) and zh (${zhKeys.length}) must have identical key count`)
+  const enSet = new Set(enKeys)
+  const zhSet = new Set(zhKeys)
+  for (const k of enKeys) {
+    assert.ok(zhSet.has(k), `key ${k} in EN must exist in ZH`)
+  }
+  for (const k of zhKeys) {
+    assert.ok(enSet.has(k), `key ${k} in ZH must exist in EN`)
+  }
+
+  // Verify specific #212 keys
+  const expectedKeys = ['voiceInput', 'assistantSpeakingGated', 'jargonFormatHint', 'errorPrefix', 'updateSuccess']
+  for (const k of expectedKeys) {
+    assert.ok(enSet.has(k), `required #212 key ${k} must exist in EN`)
+    assert.ok(zhSet.has(k), `required #212 key ${k} must exist in ZH`)
+  }
+})
+
+
+test('npm scripts provide comprehensive lint and pack-size checks (#103)', async () => {
+  const pkgRaw = await readFile(path.join(root, 'package.json'), 'utf8')
+  const pkg = JSON.parse(pkgRaw)
+
+  assert.equal(pkg.scripts.lint, 'node scripts/lint.mjs', 'lint script must use scripts/lint.mjs')
+  assert.ok(pkg.scripts['pack:check'] && pkg.scripts['pack:check'].includes('pack-check.mjs'), 'pack:check must be configured')
+  assert.ok(pkg.scripts.pretest.includes('lint.mjs'), 'pretest must run lint')
+  assert.ok(pkg.scripts.pretest.includes('pack-check.mjs'), 'pretest must run pack:check')
+})

@@ -14,11 +14,57 @@ test('readBody resolves concatenated chunks', async () => {
   assert.equal(buf.toString('utf8'), 'hello')
 })
 
-test('readBody rejects oversized body and destroys the stream', async () => {
+test('readBody rejects oversized body with 413 error without premature stream destruction', async () => {
   const req = mockReq('POST', Buffer.alloc(64, 1))
   req.fire()
-  await assert.rejects(() => readBody(req, 16), /body too large/)
-  assert.equal(req.destroyed, true)
+  await assert.rejects(
+    () => readBody(req, 16),
+    (err) => err.message === 'body too large' && err.statusCode === 413
+  )
+})
+
+test('real HTTP server returns 413 JSON to client on oversized body without ECONNRESET (#207)', async () => {
+  const http = await import('node:http')
+  const server = http.createServer(async (req, res) => {
+    try {
+      await readBody(req, 32)
+      writeJson(res, 200, { ok: true })
+    } catch (e) {
+      if (e.statusCode === 413 || e.message === 'body too large') {
+        writeJson(res, 413, { ok: false, error: { code: 'too-large', message: 'payload too large' } })
+        return
+      }
+      writeJson(res, 400, { ok: false, error: { code: 'bad', message: e.message } })
+    }
+  })
+
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  const port = server.address().port
+
+  try {
+    const res = await new Promise((resolve, reject) => {
+      const clientReq = http.request({
+        hostname: '127.0.0.1',
+        port,
+        path: '/',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': 128 }
+      }, (clientRes) => {
+        let data = ''
+        clientRes.on('data', c => data += c)
+        clientRes.on('end', () => resolve({ status: clientRes.statusCode, data: JSON.parse(data) }))
+      })
+      clientReq.on('error', reject)
+      clientReq.write('X'.repeat(128))
+      clientReq.end()
+    })
+
+    assert.equal(res.status, 413)
+    assert.equal(res.data.ok, false)
+    assert.equal(res.data.error.code, 'too-large')
+  } finally {
+    server.close()
+  }
 })
 
 test('writeJson emits status, JSON body and no-store', () => {

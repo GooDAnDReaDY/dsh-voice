@@ -76,7 +76,7 @@ graph LR
 * 🎮 **沉浸式 Push-to-Talk 对讲**：
   * **鼠标操作**：按住声波按钮开始录音，松开发送，拖离按钮取消。
   * **键盘操作**：按住 <kbd>Ctrl</kbd> 无需鼠标即刻说话，按 <kbd>Esc</kbd> 放弃本次录音。
-* ⚡ **浏览器本地零延迟同声字幕 (`browser`)**：Chrome Web Speech API 本地离线解析，说话同时浮动显示实时字幕。
+* ⚡ **浏览器实时同声字幕 (`browser`)**：Web Speech API 实时语音识别与浮动同声字幕（注意：Chrome 等标准浏览器通常将音频发送至服务商云端解析；若需 100% 本地离线隐私保护，请使用本地 `whisper` 或 `sensevoice`）。
 * 🛡️ **多服务商自动容灾切换**：首选 API 额度耗尽或遭遇 429 限流时，毫秒级顺位切换备用引擎。
 * 🧠 **上下文术语注入 (Context Glossary)**：自动从输入草稿中提取代码变量名与专业术语，引导 STT 模型精准转写专业词汇。
 * 🎵 **内嵌音频播放器**：在输入框与录音浮层中随时试听和回放刚刚录制的原始音频片段。
@@ -120,7 +120,7 @@ v0.8.18 质量审查后的修复批次（Gitea #79–#87，PR #88）：
 
 | 服务商标识 | 对应引擎 | 默认模型 | 环境变量凭据 | 特性说明 |
 |---|---|---|---|---|
-| `browser` | Web Speech API | 浏览器原生引擎 | *无需密钥* | 零延迟同声字幕输出 |
+| `browser` | Web Speech API | 浏览器原生引擎 | *无需密钥* | 零延迟同声字幕输出（依赖浏览器厂商云端解析；非离线本地） |
 | `deepgram` | Deepgram API | `nova-2` | `DEEPGRAM_API_KEY` | 极速高精云端转写 |
 | `groq` | Groq Whisper | `whisper-large-v3-turbo` | `GROQ_API_KEY` | 毫秒级极速推理 |
 | `hf` | HuggingFace Inference | `openai/whisper-large-v3` | `HF_TOKEN` | 经典高精度开源模型 |

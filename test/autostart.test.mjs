@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { apply, BaseConfig } from '../lib/index.js'
 
 const indexSrc = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
 
@@ -28,61 +29,86 @@ test('startWhisper and startSensevoice have 30s timeout and premature exit guard
   assert.match(indexSrc, /for \(let i = 0; i < 60; i\+\+\) \{[\s\S]*?sensevoiceAlive\(\)[\s\S]*?sensevoiceChild\.exitCode/, 'startSensevoice must poll up to 60 iterations with premature exit check')
 })
 
-test('autostart dispatch lifecycle simulator', async () => {
-  let whisperStarted = 0
-  let sensevoiceStarted = 0
-
-  let config = { autoStart: false, whisperModel: '', sensevoiceAutostart: false, sensevoiceModel: '' }
-
-  async function mockStartWhisper() {
-    if (!config.autoStart || !config.whisperModel) return false
-    whisperStarted++
-    return true
+test('autostart dispatch lifecycle executes production apply and responds to settings watch (#214)', async () => {
+  let shellExecuted = 0
+  let currentConfig = {
+    autoStart: false,
+    whisperModel: '',
+    sensevoiceAutostart: false,
+    sensevoiceModel: '',
+    whisperUrl: 'http://127.0.0.1:9999',
+    sensevoiceUrl: 'http://127.0.0.1:9998',
   }
 
-  async function mockStartSensevoice() {
-    if (!config.sensevoiceAutostart || !config.sensevoiceModel) return false
-    sensevoiceStarted++
-    return true
-  }
+  const watchListeners = []
+  const eventListeners = {}
 
-  function triggerAutostart() {
-    mockStartWhisper()
-    mockStartSensevoice()
-  }
-
-  // Initial apply() with defaults: autostart does not run
-  triggerAutostart()
-  assert.equal(whisperStarted, 0)
-  assert.equal(sensevoiceStarted, 0)
-
-  // Settings service deferred fiber resolves
-  const listeners = []
-  const mockSctx = {
-    settings: {
-      register() {
-        return {
-          get: () => config,
-          watch(fn) { listeners.push(fn) }
-        }
+  const mockCtx = {
+    effect: (fn) => fn(),
+    inject: (deps, fn) => {
+      if (deps.includes('settings')) {
+        fn({
+          settings: {
+            register: () => ({
+              get: () => currentConfig,
+              watch: (cb) => watchListeners.push(cb),
+            }),
+          },
+          effect: (f) => f(),
+        })
       }
-    }
+    },
+    webServer: { register: () => () => {} },
+    tools: { register: () => () => {} },
+    credentials: { resolve: async () => null },
+    logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
+    on: (evt, cb) => {
+      eventListeners[evt] = cb
+    },
+    shell: {
+      resolve: (spec) => spec,
+      execute: () => {
+        shellExecuted++
+        return {
+          done: Promise.resolve(),
+          status: 'running',
+          kill: () => {},
+        }
+      },
+      start: () => {
+        shellExecuted++
+        return { kill: () => {} }
+      },
+    },
   }
 
-  // Simulate settings loaded with autoStart enabled
-  config = { autoStart: true, whisperModel: '/path/to/ggml.bin', sensevoiceAutostart: true, sensevoiceModel: '/path/to/model' }
-  const scope = mockSctx.settings.register()
-  scope.watch(() => triggerAutostart())
+  const origFetch = globalThis.fetch
+  let pingCount = 0
+  globalThis.fetch = async () => {
+    pingCount++
+    // Return false on first check so it spawns, then true so polling succeeds immediately
+    return { ok: pingCount > 1 }
+  }
 
-  // Deferred inject finishes
-  triggerAutostart()
-  assert.equal(whisperStarted, 1)
-  assert.equal(sensevoiceStarted, 1)
+  try {
+  // 1. Initial apply with autoStart: false -> no shell executions
+  apply(mockCtx, BaseConfig(currentConfig))
+  assert.equal(shellExecuted, 0, 'must not execute shell when autoStart is false')
 
-  // Setting changed dynamically via watch
-  listeners[0]()
-  assert.equal(whisperStarted, 2)
-  assert.equal(sensevoiceStarted, 2)
+  // 2. Settings update via watch with autoStart: true and whisperModel
+  currentConfig = {
+    ...currentConfig,
+    autoStart: true,
+    whisperModel: '/models/whisper-base.bin',
+  }
+  for (const listener of watchListeners) listener()
+
+  // Wait a microtask tick for async autostart promise
+  await new Promise((r) => setTimeout(r, 600))
+  assert.ok(shellExecuted >= 1, 'must trigger shell execution on settings watch update')
+  } finally {
+    globalThis.fetch = origFetch
+  }
 })
 
 test('startWhisper and startSensevoice support modern DSH 0.2 shell.execute contract (#191)', () => {

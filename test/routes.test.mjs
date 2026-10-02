@@ -101,3 +101,115 @@ test("lib/client.js localizes jargon placeholder without hardcoded Russian liter
   assert.ok(content.includes("jargonPlaceholder"), "uses jargonPlaceholder key");
   assert.ok(content.includes("k8s -> kubernetes"), "contains localized example string");
 });
+
+
+test("host routes behavioral execution: /status, /polish, /transcribe error and edge paths (#97)", async () => {
+  const { apply, BaseConfig } = await import("../lib/index.js");
+  const { mockReq, mockRes, jsonBody, mockOversizedReq } = await import("./helpers/mock-http.mjs");
+
+  const routes = {};
+  const mockCtx = {
+    effect: (fn) => fn(),
+    inject: (deps, fn) => {
+      if (deps.includes('settings')) {
+        fn({
+          settings: {
+            register: () => ({ get: () => BaseConfig(), watch: () => {} }),
+          },
+          effect: (f) => f(),
+        });
+      }
+    },
+    webServer: {
+      register: (def) => {
+        routes[def.path] = def.handler;
+        return () => { delete routes[def.path]; };
+      },
+    },
+    tools: { register: () => () => {} },
+    credentials: { resolve: async () => null },
+    logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
+    on: () => {},
+    shell: { resolve: () => ({ command: '' }), execute: () => ({}) },
+  };
+
+  apply(mockCtx, BaseConfig());
+
+  assert.ok(routes['/dsh-voice/status'], 'must register /dsh-voice/status');
+  assert.ok(routes['/dsh-voice/polish'], 'must register /dsh-voice/polish');
+  assert.ok(routes['/dsh-voice/transcribe'], 'must register /dsh-voice/transcribe');
+
+  // 1. /status GET returns 200 with status payload
+  const statusReq = mockReq('GET');
+  const statusRes = mockRes();
+  await routes['/dsh-voice/status'](statusReq, statusRes);
+  assert.equal(statusRes.statusCode, 200);
+  const statusPayload = jsonBody(statusRes);
+  assert.equal(statusPayload.ok, true);
+  assert.ok('whisperRunning' in statusPayload);
+  assert.ok('sensevoiceRunning' in statusPayload);
+  assert.ok('noiseGateDb' in statusPayload);
+
+  // 2. /polish method guard: non-POST returns 405
+  const polishGetReq = mockReq('GET');
+  const polishGetRes = mockRes();
+  await routes['/dsh-voice/polish'](polishGetReq, polishGetRes);
+  assert.equal(polishGetRes.statusCode, 405);
+  assert.equal(jsonBody(polishGetRes).error.code, 'method');
+
+  // 3. /polish origin guard: untrusted origin returns 403
+  const polishCrossReq = mockReq('POST', JSON.stringify({ text: 'test' }), {
+    'sec-fetch-site': 'cross-site',
+    'origin': 'https://attacker.example',
+    'host': '127.0.0.1:3000',
+  });
+  polishCrossReq.socket = { remoteAddress: '198.51.100.1' };
+  polishCrossReq.fire();
+  const polishCrossRes = mockRes();
+  await routes['/dsh-voice/polish'](polishCrossReq, polishCrossRes);
+  assert.equal(polishCrossRes.statusCode, 403);
+  assert.equal(jsonBody(polishCrossRes).error.code, 'forbidden');
+
+  // 4. /polish empty or missing text returns 400
+  const polishEmptyReq = mockReq('POST', JSON.stringify({ text: '   ' }));
+  polishEmptyReq.fire();
+  const polishEmptyRes = mockRes();
+  await routes['/dsh-voice/polish'](polishEmptyReq, polishEmptyRes);
+  assert.equal(polishEmptyRes.statusCode, 400);
+  assert.equal(jsonBody(polishEmptyRes).error.code, 'empty');
+
+  // 5. /polish oversized body returns 413
+  const polishOverReq = mockOversizedReq('POST', 1024 * 1024 + 100);
+  polishOverReq.fire();
+  const polishOverRes = mockRes();
+  await routes['/dsh-voice/polish'](polishOverReq, polishOverRes);
+  assert.equal(polishOverRes.statusCode, 413);
+  assert.equal(jsonBody(polishOverRes).error.code, 'too-large');
+
+  // 6. /transcribe method guard: non-POST returns 405
+  const transGetReq = mockReq('GET');
+  const transGetRes = mockRes();
+  await routes['/dsh-voice/transcribe'](transGetReq, transGetRes);
+  assert.equal(transGetRes.statusCode, 405);
+  assert.equal(jsonBody(transGetRes).error.code, 'method');
+
+  // 7. /transcribe untrusted caller returns 403
+  const transCrossReq = mockReq('POST', JSON.stringify({ dataBase64: 'AAAA' }), {
+    'sec-fetch-site': 'cross-site',
+    'origin': 'https://evil.org',
+    'host': '127.0.0.1:3000',
+  });
+  transCrossReq.socket = { remoteAddress: '198.51.100.1' };
+  transCrossReq.fire();
+  const transCrossRes = mockRes();
+  await routes['/dsh-voice/transcribe'](transCrossReq, transCrossRes);
+  assert.equal(transCrossRes.statusCode, 403);
+
+  // 8. /transcribe missing audio returns 400
+  const transNoAudioReq = mockReq('POST', JSON.stringify({}));
+  transNoAudioReq.fire();
+  const transNoAudioRes = mockRes();
+  await routes['/dsh-voice/transcribe'](transNoAudioReq, transNoAudioRes);
+  assert.equal(transNoAudioRes.statusCode, 400);
+  assert.equal(jsonBody(transNoAudioRes).error.code, 'no-audio');
+});

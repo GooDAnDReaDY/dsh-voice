@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.12
+
+### Fixed
+- **Settings Persistence & Error Propagation (#204)**: Propagate failures when persisting via legacy `scope.set` instead of suppressing them, and prevent duplicate writes when modern `settingsService` has already persisted.
+- **Optimistic Concurrency (#215)**: Return revision on `GET /config` and enforce `expectedRevision` checks on save, returning HTTP 409 Conflict on revision mismatch to prevent parallel form submissions from silently overwriting concurrent changes.
+- **Canonical Language & Chinese Selector (#208)**: Represent auto-detect as canonical empty string `''` and add Chinese (`zh`) to the language selector, preserving unknown/custom language codes.
+- **Web Speech Language Policy (#201)**: Resolve browser recognizer language using document/interface and navigator language when set to auto instead of hardcoding `ru-RU`, documenting Web Speech limitations.
+- **Truthful Updater Status (#213)**: Distinguish loading, unknown, check failure, and up-to-date states in `UpdaterCard`, eliminating hardcoded version fallback and false positive success badges.
+- **Plugin Lifecycle Event Listeners (#203)**: Encapsulate TTS listeners (`dsh:tts:start`, `dsh:tts:stop`), `settings-saved`, `pagehide`, and `beforeunload` in `ctx.effect` with symmetric disposal and teardown on unmount.
+- **Settings CSS Scoping (#211)**: Scope all `.cb-*` style rules to `.dvo-settings-root` and manage the `<style>` tag lifecycle via `ctx.effect` to prevent styles from leaking into adjacent plugin cards.
+
 ## 0.9.11
 
 ### Fixed

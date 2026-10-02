@@ -416,3 +416,14 @@ test('EN and ZH locale dictionaries are symmetric and cover required UI keys (#2
     assert.ok(zhSet.has(k), `required #212 key ${k} must exist in ZH`)
   }
 })
+
+
+test('npm scripts provide comprehensive lint and pack-size checks (#103)', async () => {
+  const pkgRaw = await readFile(path.join(root, 'package.json'), 'utf8')
+  const pkg = JSON.parse(pkgRaw)
+
+  assert.equal(pkg.scripts.lint, 'node scripts/lint.mjs', 'lint script must use scripts/lint.mjs')
+  assert.ok(pkg.scripts['pack:check'] && pkg.scripts['pack:check'].includes('pack-check.mjs'), 'pack:check must be configured')
+  assert.ok(pkg.scripts.pretest.includes('lint.mjs'), 'pretest must run lint')
+  assert.ok(pkg.scripts.pretest.includes('pack-check.mjs'), 'pretest must run pack:check')
+})

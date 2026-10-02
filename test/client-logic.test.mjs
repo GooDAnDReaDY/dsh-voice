@@ -334,3 +334,44 @@ test('newline preservation across tidyPhrase, applyVoiceCommands, and draft inse
   assert.ok(clientSrc.includes("action === 'newline'"), 'newline action handling must be wired')
   assert.ok(clientSrc.includes("draft.endsWith('\\n') || text.startsWith('\\n')"), 'newline boundary check must prevent extra spaces')
 })
+
+test('supported languages include canonical auto empty string and Chinese (#208)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes("code: ''"), 'canonical auto empty string must be present')
+  assert.ok(clientSrc.includes("code: 'zh'"), 'Chinese language code zh must be present')
+  assert.ok(clientSrc.includes("modeVal(mode, 'language', '')"), 'default language lookup must use canonical empty string')
+  assert.ok(clientSrc.includes('langAuto'), 'langAuto localization key must be present')
+})
+
+test('Web Speech browser recognizer resolves language according to environment policy (#201)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('function resolveBrowserRecognitionLang'), 'resolveBrowserRecognitionLang helper must be defined')
+  assert.ok(!clientSrc.includes("recognition.lang = options.lang && options.lang !== 'auto' ? options.lang : 'ru-RU'"), 'hardcoded ru-RU default must be removed')
+  assert.ok(clientSrc.includes('document.documentElement.lang') || clientSrc.includes('navigator.language'), 'document/navigator language must be respected for auto')
+})
+
+test('updater card does not report false upToDate when status is unknown or check failed (#213)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(!clientSrc.includes("'v' + ((updaterStatus && updaterStatus.currentVersion) || '0.9.6')"), 'hardcoded 0.9.6 fallback must be removed')
+  assert.ok(clientSrc.includes('updaterStatus.latestCheckFailed'), 'updater card must handle latestCheckFailed')
+  assert.ok(clientSrc.includes('updateStatusUnknown'), 'unknown status fallback must be wired')
+})
+
+test('registerGlobalLifecycle attaches and disposes all 5 global event listeners symmetrically (#203)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('function registerGlobalLifecycle'), 'registerGlobalLifecycle must be defined')
+  assert.ok(clientSrc.includes("removeEventListener('dsh:tts:start'"), 'dsh:tts:start must have symmetrical cleanup')
+  assert.ok(clientSrc.includes("removeEventListener('dsh:tts:stop'"), 'dsh:tts:stop must have symmetrical cleanup')
+  assert.ok(clientSrc.includes("removeEventListener('dsh-voice:settings-saved'"), 'settings-saved must have symmetrical cleanup')
+  assert.ok(clientSrc.includes("removeEventListener('pagehide'"), 'pagehide must have symmetrical cleanup')
+  assert.ok(clientSrc.includes("removeEventListener('beforeunload'"), 'beforeunload must have symmetrical cleanup')
+})
+
+test('settings CSS rules are strictly scoped to .dvo-settings-root and managed via lifecycle (#211)', async () => {
+  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
+  assert.ok(clientSrc.includes('.dvo-settings-root .cb-section-card'), 'cb-section-card must be scoped to dvo-settings-root')
+  assert.ok(clientSrc.includes('.dvo-settings-root .cb-btn'), 'cb-btn must be scoped to dvo-settings-root')
+  assert.ok(!clientSrc.includes("'.cb-page{"), 'naked .cb-page rule must not exist')
+  assert.ok(!clientSrc.includes("'.cb-btn{"), 'naked .cb-btn rule must not exist')
+  assert.ok(clientSrc.includes('function installSettingsCss'), 'installSettingsCss must be defined')
+})

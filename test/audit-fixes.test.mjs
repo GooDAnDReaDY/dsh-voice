@@ -1106,3 +1106,119 @@ test('Issue #191: localDaemons reads child.readOutput() and handles result rejec
     globalThis.fetch = oldFetch
   }
 })
+
+test('Issue #205: checkProfileLock guards against deleting live successor lock written on subsequent read', () => {
+  const tmpDir = path.join(__dirname, '..', '.worktrees', 'test-lock-live-subsequent-' + Date.now())
+  fs.mkdirSync(tmpDir, { recursive: true })
+  const lock = path.join(tmpDir, 'package.json.lock')
+  fs.writeFileSync(lock, '99999999')
+
+  try {
+    let reads = 0
+    const sandbox = {
+      Date, Math, resolve: path.resolve, existsSync: fs.existsSync, statSync: fs.statSync, unlinkSync: fs.unlinkSync,
+      isProcessAlive: (p) => p === process.pid,
+      readLockPid: (p) => {
+        reads++
+        const observed = Number(fs.readFileSync(p, 'utf8'))
+        // Concurrent writer acquires live lock on third read
+        if (reads === 3) fs.writeFileSync(p, String(process.pid))
+        return observed
+      },
+    }
+
+    const src = fs.readFileSync(path.join(__dirname, '..', 'lib', 'updater.js'), 'utf8')
+    const fn = src.match(/export function checkProfileLock\(profileDir\) \{[\s\S]*?\n\}/)[0].replace('export ', '')
+    vm.createContext(sandbox)
+    vm.runInContext(fn + ';globalThis.check=checkProfileLock;', sandbox)
+
+    const out = sandbox.check(tmpDir)
+    assert.equal(out.locked, true, 'must detect live successor lock')
+    assert.equal(out.pid, process.pid, 'must report live successor PID')
+    assert.equal(fs.existsSync(lock), true, 'live successor lock must not be deleted')
+  } finally {
+    try {
+      if (fs.existsSync(lock)) fs.unlinkSync(lock)
+      if (fs.existsSync(tmpDir)) fs.rmdirSync(tmpDir)
+    } catch (_) {}
+  }
+})
+
+test('Issue #191: localDaemons does not block readiness poll on pending result while process is running', async () => {
+  for (const kind of ['whisper', 'sensevoice']) {
+    const savedFetch = globalThis.fetch
+    const savedTimer = globalThis.setTimeout
+    let health = 0
+    let ready = false
+    let resultCalls = 0
+    let settled = false
+    let resolveResult
+    let resolveDone
+    let kills = 0
+    const resultPromise = new Promise((r) => { resolveResult = r })
+    const done = new Promise((r) => { resolveDone = r })
+    const handle = {
+      status: 'running',
+      exitCode: null,
+      done,
+      readOutput: () => ({ stderr: '', stdout: '' }),
+      result: () => {
+        resultCalls++
+        return resultPromise
+      },
+      kill: () => {
+        kills++
+        handle.status = 'killed'
+        resolveResult({ exitCode: null, stderr: 'Fixture disposed' })
+        resolveDone()
+        return true
+      },
+    }
+
+    globalThis.fetch = async () => {
+      health++
+      return { ok: ready, status: 503 }
+    }
+    globalThis.setTimeout = (f, ms) => {
+      if (ms === 500) {
+        queueMicrotask(f)
+        return 0
+      }
+      return savedTimer(f, ms)
+    }
+
+    try {
+      const cfg = {
+        autoStart: true,
+        whisperModel: 'fixture.bin',
+        whisperBin: 'fixture',
+        whisperUrl: 'http://127.0.0.1:9',
+        dictation: { language: '' },
+        sensevoiceAutostart: true,
+        sensevoiceModel: 'fixture.onnx',
+        sensevoiceBin: 'fixture',
+        sensevoiceUrl: 'http://127.0.0.1:9',
+      }
+      const d = createLocalDaemons({ live: () => cfg, ctx: { shell: { resolve: (x) => x, execute: async () => handle } } })
+      const operation = kind === 'whisper' ? d.startWhisper() : d.startSensevoice()
+      operation.then(() => { settled = true })
+      await new Promise((r) => savedTimer(r, 20))
+      ready = true
+      await new Promise((r) => savedTimer(r, 20))
+      const secondAttempt = await (kind === 'whisper' ? d.startWhisper() : d.startSensevoice())
+
+      assert.equal(resultCalls, 0, 'result() must not be called while process is running')
+      assert.equal(ready, true, 'server must become ready')
+      assert.equal(settled, true, 'daemon startup must settle successfully')
+      assert.equal(secondAttempt, true, 'second attempt must return true')
+      assert.equal(handle.status, 'running', 'status must remain running')
+
+      d.dispose()
+      await operation
+      assert.equal(kills, 1, 'daemon must be killed on dispose')
+    } finally {
+      globalThis.fetch = savedFetch
+      globalThis.setTimeout = savedTimer
+    }
+  }
+})

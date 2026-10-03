@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.20
+
+### Fixed
+- **Native Multiphase Dictation TokenSpan Refresh (#198)**: Refresh `target.span` via `actions.captureInsertion()` on each successful text insertion in multiphase dictation, ensuring subsequent cut segments and the final tail chunk receive advancing `draftRev` revisions rather than stale revision 1.
+- **Rejected Insertion Auto-Send Suppression (#198)**: Suppress transition to `phase: 'pending'` and keep `voice.pending` null when `appendDraft` fails (e.g. revision rejected due to concurrent user edits), preventing `submitPending()` from auto-submitting uninserted voice drafts over user input.
+- **Concurrent Live Lock Cleanup Guard (#205)**: Perform a follow-up confirmation read of `readLockPid(lockPath)` before unlinking in `checkProfileLock`; preserve the lockfile and report `{ locked: true, pid }` if a concurrent successor process acquired the lock during stale inspection.
+- **Local Daemon Stderr Diagnostics & Result Rejection (#191)**: Call `child.readOutput()` (with fallback to `read()`) and catch `child.result()` rejections across Whisper and SenseVoice daemons, exposing underlying spawn and termination stderr diagnostics instead of masking them behind generic exit messages.
+- **Comprehensive Audit Verification Suite (#214)**: Added regression tests in `test/audit-fixes.test.mjs` verifying multiphase TokenSpan progression, rejected-insert pending suppression, successor lock retention, and spawn stderr propagation across 236 passing tests.
+
 ## 0.9.19
 
 ### Fixed

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.22
+
+### Fixed
+- **Lockfile Stat Verification & TOCTOU Elimination (#205)**: Added filesystem metadata verification (`statSync: mtimeMs, size`) in `checkProfileLock` before removing stale lockfiles. If a concurrent writer modifies or acquires `package.json.lock` at any point during inspection (including on final reads), the lockfile is preserved, live PID is re-read, and `{ locked: true, pid }` is reported.
+- **Comprehensive Audit Probe Suite (#214)**: Added regression coverage in `test/audit-fixes.test.mjs` matching the final-lock audit probe for 4th-read concurrent lock acquisition (239 passing tests).
+
 ## 0.9.21
 
 ### Fixed

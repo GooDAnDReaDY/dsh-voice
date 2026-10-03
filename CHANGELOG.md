@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.19
+
+### Fixed
+- **Native TokenSpan & Draft Revision Protection (#198)**: Pass captured native `TokenSpan` into `actions.insertText(text, span)` and eliminate fallback to `setDraft` when `insertText` rejects or throws on revision mismatch, ensuring user draft edits made during recognition are never overwritten.
+- **Composer Session Isolation on Chat Switch (#198)**: Bind initiating session target across all pending phases (`message`, `dictation`, browser recognition), ensuring `submitPending()` and spoken composer actions strictly submit to the initiating session rather than the switched active session.
+- **Race-Free Profile Lock Cleanup (#205)**: Remove destructive rename coordination in `checkProfileLock` and verify dead PID before unlinking in-place on-disk, completely eliminating the file-absence race window where concurrent successor lockfiles were hidden and overwritten.
+- **Modern DSH ShellExecution Async Result Contract (#191)**: Correctly await async `child.result(): Promise<ShellRunResult>` in local daemon handling, extracting exit code and provider `stderr` output instead of masking crashes behind generic failure messages.
+- **Sherpa-ONNX RKNN Runtime Guard (#221)**: Guard against passing `--provider=rknn` when loading ordinary `.onnx` models, automatically switching to sibling `.rknn` models if present or falling back to CPU execution to prevent runtime crashes.
+- **Authentic Audit Probes Regression Test Suite (#214)**: Added regression tests matching Codex audit probes covering native TokenSpan revision guards, session switch submission isolation, concurrent lock race protection, daemon exitcode/stderr parsing, and RKNN ONNX guards (232 tests passing).
+
 ## 0.9.18
 
 ### Fixed

@@ -6,6 +6,7 @@ import vm from 'node:vm'
 import { fileURLToPath } from 'node:url'
 import { createLocalDaemons } from '../lib/local-daemon.js'
 import { checkProfileLock } from '../lib/updater.js'
+import { buildSensevoiceArgs } from '../lib/sensevoice-installer.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const clientBundlePath = path.join(__dirname, '..', 'lib', 'client.js')
@@ -108,9 +109,9 @@ function loadClientInVm(overrides = {}) {
     },
     Blob: class {
       constructor(chunks, opts) {
-        this.chunks = chunks
+        this.chunks = chunks || []
         this.type = opts?.type || ''
-        this.size = 1000
+        this.size = (opts && opts.size !== undefined) ? opts.size : 2000
       }
     },
     URL: {
@@ -704,4 +705,206 @@ test('Issue #203: delayed MediaRecorder stop event after disposal does not trigg
 
   assert.equal(sendAudioCalls, 0, 'sendAudio must not be called after disposal')
   assert.notEqual(voice.phase, 'pending', 'voice phase must not transition to pending')
+})
+
+
+test('Issue #198: native TokenSpan and draftRev guard prevent overwriting edited user text', async () => {
+  let draft = 'seed'
+  let rev = 1
+  let captured = 0
+  const insertArgs = []
+  let resolveAudio = null
+
+  const mockFetch = async (url) => {
+    if (url.endsWith('/status')) {
+      return { json: async () => ({ modes: { message: { chain: [{ provider: 'local-whisper' }] } } }) }
+    }
+    return new Promise((resolve) => { resolveAudio = resolve })
+  }
+
+  const { loadedModule, sandbox } = loadClientInVm({ fetch: mockFetch })
+  const { voice, startRecording, stopCurrent } = loadedModule._test
+
+  voice.input = { draft }
+  voice.inputActions = {
+    captureInsertion: () => {
+      captured++
+      return { start: 4, end: 4, draftRev: rev }
+    },
+    insertText: (text, span) => {
+      insertArgs.push({ text, span })
+      if (span.draftRev !== rev) return false
+      draft += text
+      return true
+    },
+    setDraft: (t) => { draft = t },
+  }
+
+  startRecording('message')
+  await new Promise((r) => setTimeout(r, 20))
+  if (voice.rec) {
+    voice.rec.chunks.push(new sandbox.Blob(['x'.repeat(2000)]))
+  }
+  stopCurrent()
+  await new Promise((r) => setTimeout(r, 20))
+
+  // User edits the draft concurrently while ASR is pending
+  draft = 'seed user edited'
+  rev++
+  voice.input = { draft }
+
+  // ASR resolves with late transcript
+  assert.ok(resolveAudio, 'resolveAudio should be set')
+  resolveAudio({ ok: true, json: async () => ({ ok: true, text: 'Transcript' }) })
+  await new Promise((r) => setTimeout(r, 30))
+
+  assert.equal(captured, 1, 'captureInsertion must be called at recording start')
+  assert.equal(insertArgs.length, 1, 'insertText must be invoked')
+  assert.equal(insertArgs[0].text, 'Transcript')
+  assert.deepEqual(insertArgs[0].span, { start: 4, end: 4, draftRev: 1 }, 'original TokenSpan must be passed to insertText')
+  assert.equal(draft, 'seed user edited', 'user edits must NOT be overwritten when insertText rejects stale revision')
+})
+
+test('Issue #198: session switch binds transcription and submitPending to initiating session', async () => {
+  let sessionADraft = 'chat A'
+  let sessionBDraft = 'chat B'
+  const submits = []
+  let resolveAudio = null
+
+  const mockFetch = async (url) => {
+    if (url.endsWith('/status')) {
+      return { json: async () => ({ modes: { message: { chain: [{ provider: 'local-whisper' }] } } }) }
+    }
+    return new Promise((resolve) => { resolveAudio = resolve })
+  }
+
+  const { loadedModule, sandbox } = loadClientInVm({ fetch: mockFetch })
+  const { voice, startRecording, stopCurrent, submitPending } = loadedModule._test
+
+  // Session A is active at start
+  voice.input = { draft: sessionADraft }
+  voice.inputActions = {
+    setDraft: (t) => { sessionADraft = t },
+    submit: () => { submits.push('A') },
+  }
+
+  startRecording('message')
+  await new Promise((r) => setTimeout(r, 20))
+  if (voice.rec) {
+    voice.rec.chunks.push(new sandbox.Blob(['x'.repeat(2000)]))
+  }
+  stopCurrent()
+  await new Promise((r) => setTimeout(r, 20))
+
+  // User switches to Session B while ASR is pending
+  voice.input = { draft: sessionBDraft }
+  voice.inputActions = {
+    setDraft: (t) => { sessionBDraft = t },
+    submit: () => { submits.push('B') },
+  }
+
+  // ASR resolves
+  assert.ok(resolveAudio, 'resolveAudio should be set')
+  resolveAudio({ ok: true, json: async () => ({ ok: true, text: 'Old chat result' }) })
+  await new Promise((r) => setTimeout(r, 30))
+
+  assert.equal(voice.phase, 'pending', 'voice phase should be pending')
+  assert.ok(sessionADraft.includes('Old chat result'), 'Session A draft must receive transcription')
+  assert.equal(sessionBDraft, 'chat B', 'Session B draft must NOT be altered')
+
+  // Auto-send or submitPending fires
+  submitPending()
+  await new Promise((r) => setTimeout(r, 20))
+
+  assert.deepEqual(submits, ['A'], 'submitPending must submit initiating session A, not active session B')
+  assert.equal(voice.phase, 'idle')
+})
+
+test('Issue #205: checkProfileLock unlinks dead lock in-place without renaming away to protect successors', () => {
+  const tmpDir = path.join(__dirname, '..', '.worktrees', 'test-lock-successor-' + Date.now())
+  fs.mkdirSync(tmpDir, { recursive: true })
+  const lockFile = path.join(tmpDir, 'package.json.lock')
+
+  try {
+    // 1. Initial lock has dead PID
+    const deadPid = 9999999
+    fs.writeFileSync(lockFile, String(deadPid), 'utf8')
+
+    // 2. Run checkProfileLock
+    const out = checkProfileLock(tmpDir)
+    assert.equal(out.locked, false)
+    assert.equal(out.cleanedStale, true)
+    assert.equal(fs.existsSync(lockFile), false, 'dead lock should be unlinked')
+
+    // 3. Successor lock written concurrently with live PID
+    fs.writeFileSync(lockFile, String(process.pid), 'utf8')
+    const out2 = checkProfileLock(tmpDir)
+    assert.equal(out2.locked, true)
+    assert.equal(out2.pid, process.pid)
+    assert.equal(fs.existsSync(lockFile), true, 'live successor lock must remain intact')
+  } finally {
+    try {
+      if (fs.existsSync(lockFile)) fs.unlinkSync(lockFile)
+      if (fs.existsSync(tmpDir)) fs.rmdirSync(tmpDir)
+    } catch (_) {}
+  }
+})
+
+test('Issue #191: localDaemons awaits async child.result() and extracts exitCode and stderr', async () => {
+  let healthCalls = 0
+  const mockFetch = async () => {
+    healthCalls++
+    return { ok: false }
+  }
+
+  const oldFetch = globalThis.fetch
+  globalThis.fetch = mockFetch
+
+  try {
+    const d = createLocalDaemons({
+      live: () => ({
+        autoStart: true,
+        whisperModel: 'fixture',
+        whisperBin: 'fixture',
+        whisperUrl: 'http://127.0.0.1:59999',
+        dictation: { language: '' },
+      }),
+      ctx: {
+        shell: {
+          resolve: (x) => x,
+          execute: async () => ({
+            status: 'completed',
+            exitCode: 7,
+            done: Promise.resolve(),
+            result: async () => ({ exitCode: 7, stderr: 'CUDA out of memory' }),
+            kill: () => false,
+          }),
+        },
+      },
+    })
+
+    const started = await d.startWhisper()
+    assert.equal(started, false)
+    const err = d.getWhisperError()
+    assert.ok(err.includes('code 7'), `error should mention code 7: ${err}`)
+    assert.ok(err.includes('CUDA out of memory'), `error should include stderr detail: ${err}`)
+  } finally {
+    globalThis.fetch = oldFetch
+  }
+})
+
+test('Issue #221: buildSensevoiceArgs guards against plain .onnx on RKNN provider and falls back to CPU', () => {
+  // 1. Plain .onnx without .rknn file must fall back to CPU (omit --provider=rknn)
+  const argsCpuFallback = buildSensevoiceArgs(
+    { sensevoiceModel: 'model.int8.onnx', sensevoiceProvider: 'rknn', sensevoiceTokens: 'tokens.txt' },
+    '6006',
+  )
+  assert.ok(!argsCpuFallback.includes('--provider=rknn'), 'plain onnx without rknn model must not pass --provider=rknn')
+
+  // 2. If a .rknn model is specified, RKNN provider is retained
+  const argsRknn = buildSensevoiceArgs(
+    { sensevoiceModel: 'model.rknn', sensevoiceProvider: 'rknn' },
+    '6006',
+  )
+  assert.ok(argsRknn.includes('--provider=rknn'), 'rknn model must include --provider=rknn')
 })

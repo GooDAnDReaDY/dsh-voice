@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.21
+
+### Fixed
+- **Daemon Readiness Polling Unblocked (#191)**: Guard `child.result()` awaiting in local daemon health polling loops so it only executes when the child process enters a terminal status (`killed`, `completed`, `exited`, `failed` or non-null `exitCode`). When status is `'running'`, polling proceeds unimpeded to verify HTTP readiness without waiting for the process to terminate.
+- **Sequential Successor Lock Protection (#205)**: Perform verified sequential reads in `checkProfileLock` before unlinking stale lockfiles. If a concurrent writer claims the lock with a living PID on subsequent checks, preserve the file and report `{ locked: true, pid }`.
+- **Audit Probe Regression Coverage (#214)**: Added regression tests verifying daemon startup completion without blocking running processes and successor lock retention across sequential write intervals (238 passing tests).
+
 ## 0.9.20
 
 ### Fixed

@@ -908,3 +908,201 @@ test('Issue #221: buildSensevoiceArgs guards against plain .onnx on RKNN provide
   )
   assert.ok(argsRknn.includes('--provider=rknn'), 'rknn model must include --provider=rknn')
 })
+
+test('Issue #198: multiphase dictation refreshes TokenSpan on accepted insert across phrase cuts', async () => {
+  let draft = ''
+  let rev = 1
+  let captures = 0
+  let requests = 0
+  const calls = []
+
+  const mockFetch = async (url) => {
+    if (url.endsWith('/status')) {
+      return { json: async () => ({ modes: { dictation: { chain: [{ provider: 'local-whisper' }] } } }) }
+    }
+    requests++
+    return { ok: true, json: async () => ({ ok: true, text: ['First', 'Second', 'Tail'][requests - 1] }) }
+  }
+
+  const { loadedModule, sandbox } = loadClientInVm({ fetch: mockFetch })
+  const { voice, startRecording, cutPhrase, stopCurrent } = loadedModule._test
+
+  voice.input = { draft }
+  voice.inputActions = {
+    captureInsertion: () => {
+      captures++
+      return { start: draft.length, end: draft.length, draftRev: rev }
+    },
+    insertText: (text, span) => {
+      const accepted = span.draftRev === rev
+      calls.push({ text, spanRev: span.draftRev, currentRev: rev, accepted })
+      if (!accepted) return false
+      draft += text
+      rev++
+      return true
+    },
+    setDraft: () => { throw new Error('Native fallback must not execute') },
+  }
+
+  startRecording('dictation')
+  await new Promise((r) => setTimeout(r, 20))
+  const rec = voice.rec
+  assert.ok(rec, 'recording session must be active')
+
+  rec.chunks.push(new sandbox.Blob(['x'.repeat(1000)]))
+  cutPhrase()
+  await new Promise((r) => setTimeout(r, 30))
+
+  rec.chunks.push(new sandbox.Blob(['y'.repeat(1000)]))
+  cutPhrase()
+  await new Promise((r) => setTimeout(r, 30))
+
+  rec.chunks.push(new sandbox.Blob(['z'.repeat(1000)]))
+  stopCurrent()
+  await new Promise((r) => setTimeout(r, 40))
+
+  assert.equal(requests, 3, 'all 3 audio requests must be dispatched')
+  assert.equal(calls.length, 3, 'all 3 phrases must be submitted for insertion')
+  assert.ok(calls.every((c) => c.accepted), 'every phrase must be accepted with advancing revision')
+  assert.equal(draft, 'FirstSecondTail', 'all speech segments must be appended in sequence')
+  assert.equal(voice.phase, 'idle')
+})
+
+test('Issue #198: rejected insertText suppresses pending phase and prevents premature auto-send', async () => {
+  let draft = 'seed'
+  let rev = 1
+  let resolveAudio = null
+  const submits = []
+
+  const mockFetch = async (url) => {
+    if (url.endsWith('/status')) {
+      return { json: async () => ({ modes: { message: { chain: [{ provider: 'local-whisper' }] } } }) }
+    }
+    return new Promise((r) => { resolveAudio = r })
+  }
+
+  const { loadedModule, sandbox } = loadClientInVm({ fetch: mockFetch })
+  const { voice, startRecording, stopCurrent, submitPending } = loadedModule._test
+
+  voice.input = { draft }
+  voice.inputActions = {
+    captureInsertion: () => ({ start: 4, end: 4, draftRev: rev }),
+    insertText: (text, span) => {
+      if (span.draftRev !== rev) return false
+      draft += text
+      rev++
+      return true
+    },
+    submit: () => submits.push(draft),
+  }
+
+  startRecording('message')
+  await new Promise((r) => setTimeout(r, 20))
+  voice.rec.chunks.push(new sandbox.Blob(['x'.repeat(2000)]))
+  stopCurrent()
+  await new Promise((r) => setTimeout(r, 20))
+
+  // User manually edits the draft while recognition is pending
+  draft = 'seed user edited'
+  rev++
+  voice.input = { draft }
+
+  // ASR arrives with text
+  resolveAudio({ ok: true, json: async () => ({ ok: true, text: 'Voice text rejected' }) })
+  await new Promise((r) => setTimeout(r, 30))
+
+  // Verify pending was NOT activated because insertion was rejected
+  assert.notEqual(voice.phase, 'pending', 'voice phase must not transition to pending on rejected insertion')
+  assert.equal(voice.pending, null, 'voice.pending must remain null on rejected insertion')
+
+  // Auto-send timer or submitPending must do nothing
+  submitPending()
+  await new Promise((r) => setTimeout(r, 20))
+
+  assert.deepEqual(submits, [], 'user draft must not be auto-submitted if voice text was rejected')
+  assert.equal(draft, 'seed user edited', 'user edit must be preserved')
+})
+
+test('Issue #205: checkProfileLock guards against deleting live successor lock written concurrently', () => {
+  const tmpDir = path.join(__dirname, '..', '.worktrees', 'test-lock-live-successor-' + Date.now())
+  fs.mkdirSync(tmpDir, { recursive: true })
+  const lock = path.join(tmpDir, 'package.json.lock')
+  fs.writeFileSync(lock, '99999999')
+
+  try {
+    let reads = 0
+    const sandbox = {
+      Date, Math, resolve: path.resolve, existsSync: fs.existsSync, statSync: fs.statSync, unlinkSync: fs.unlinkSync,
+      isProcessAlive: (p) => p === process.pid,
+      readLockPid: (p) => {
+        reads++
+        const observed = Number(fs.readFileSync(p, 'utf8'))
+        // Concurrent writer acquires live lock at read 2
+        if (reads === 2) fs.writeFileSync(p, String(process.pid))
+        return observed
+      },
+    }
+
+    const src = fs.readFileSync(path.join(__dirname, '..', 'lib', 'updater.js'), 'utf8')
+    const fn = src.match(/export function checkProfileLock\(profileDir\) \{[\s\S]*?\n\}/)[0].replace('export ', '')
+    vm.createContext(sandbox)
+    vm.runInContext(fn + ';globalThis.check=checkProfileLock;', sandbox)
+
+    const out = sandbox.check(tmpDir)
+    assert.equal(out.locked, true, 'must detect live successor lock')
+    assert.equal(out.pid, process.pid, 'must report live successor PID')
+    assert.equal(fs.existsSync(lock), true, 'live successor lock must not be deleted')
+  } finally {
+    try {
+      if (fs.existsSync(lock)) fs.unlinkSync(lock)
+      if (fs.existsSync(tmpDir)) fs.rmdirSync(tmpDir)
+    } catch (_) {}
+  }
+})
+
+test('Issue #191: localDaemons reads child.readOutput() and handles result rejection for spawn failure stderr', async () => {
+  let reads = 0
+  let results = 0
+
+  const oldFetch = globalThis.fetch
+  globalThis.fetch = async () => ({ ok: false })
+
+  try {
+    const d = createLocalDaemons({
+      live: () => ({
+        autoStart: true,
+        whisperModel: 'fixture',
+        whisperBin: 'fixture',
+        whisperUrl: 'http://127.0.0.1:9999',
+        dictation: { language: '' },
+      }),
+      ctx: {
+        shell: {
+          resolve: (x) => x,
+          execute: async () => ({
+            status: 'killed',
+            exitCode: null,
+            done: Promise.resolve(),
+            readOutput: () => {
+              reads++
+              return { stderr: 'Provider spawn rejected: Sandbox unavailable', stdout: '' }
+            },
+            result: async () => {
+              results++
+              throw new Error('Provider spawn rejected: Sandbox unavailable')
+            },
+            kill: () => false,
+          }),
+        },
+      },
+    })
+
+    const started = await d.startWhisper()
+    assert.equal(started, false)
+    assert.ok(reads >= 1, 'child.readOutput must be called')
+    const err = d.getWhisperError()
+    assert.ok(err.includes('Provider spawn rejected: Sandbox unavailable'), `error should contain detail: ${err}`)
+  } finally {
+    globalThis.fetch = oldFetch
+  }
+})

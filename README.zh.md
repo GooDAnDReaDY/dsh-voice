@@ -142,6 +142,17 @@ v0.8.18 质量审查后的修复批次（Gitea #79–#87，PR #88）：
 * `GET /dsh-voice/config` — 获取插件运行时配置快照
 * `PUT /dsh-voice/config` — 跨网络安全持久化更新插件配置
 * `GET/POST /dsh-voice/sensevoice-installer` — SenseVoice 一键模型安装状态与触发接口（受 `isTrustedCaller` 保护，绝对路径脱敏）
+* `POST /api/dsh-voice/update` — 触发插件自动更新至 npm 最新兼容版本（受本地调用与锁校验保护）
+* `GET /api/dsh-voice/update` — 获取更新检查状态与版本信息
+
+### 🔒 配置文件锁与操作员恢复机制
+在安装或更新插件时，DeepSeek Harness 使用 `<profile-dir>/package.json.lock` 协调并发操作。
+* **规范竞争者策略**: 竞争者进程绝不删除现有的锁定文件。禁止竞争者自动清理残留锁，以杜绝 TOCTOU 竞态条件。
+* **诊断信息**: 若存在 lock 文件，更新请求将返回 `409 Conflict` 并附带诊断说明（关联 PID 或文件系统访问错误码 `EACCES`/`EIO`）。
+* **操作员手动恢复**: 若先前安装进程异常终止（如 OOM 或系统断电）留下僵死锁，需由操作员手动清理：
+  ```bash
+  rm /home/vadim/.dsh/profiles/web/package.json.lock
+  ```
 
 ---
 

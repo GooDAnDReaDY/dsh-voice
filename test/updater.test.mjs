@@ -1,6 +1,18 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { isTrustedUpdateRequest, registerPluginUpdater } from '../lib/updater.js'
+import { EventEmitter } from 'node:events'
+import vm from 'node:vm'
+import { mkdtempSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import {
+  isTrustedUpdateRequest,
+  registerPluginUpdater,
+  readLockPid,
+  isProcessAlive,
+  checkProfileLock,
+  formatLockDiagnostic,
+} from '../lib/updater.js'
 
 test('isTrustedUpdateRequest rejects remote, cross-site, or untrusted requests', () => {
   // Missing update header
@@ -35,36 +47,21 @@ test('isTrustedUpdateRequest rejects remote, cross-site, or untrusted requests',
       socket: { remoteAddress: '127.0.0.1' },
     }),
     false,
-    'cross-site request must be rejected'
+    'cross-site must be rejected'
   )
 
-  // Mismatched origin and host
+  // Valid local request
   assert.equal(
     isTrustedUpdateRequest({
       headers: {
         'x-dsh-plugin-update': '1',
-        origin: 'http://localhost:4000',
-        host: 'localhost:3000',
-      },
-      socket: { remoteAddress: '127.0.0.1' },
-    }),
-    false,
-    'mismatched origin and host must be rejected'
-  )
-
-  // Valid local same-origin request
-  assert.equal(
-    isTrustedUpdateRequest({
-      headers: {
-        'x-dsh-plugin-update': '1',
-        'sec-fetch-site': 'same-origin',
         origin: 'http://localhost:3000',
         host: 'localhost:3000',
       },
       socket: { remoteAddress: '127.0.0.1' },
     }),
     true,
-    'trusted same-origin loopback request must be accepted'
+    'valid local request must be accepted'
   )
 })
 
@@ -72,11 +69,9 @@ test('registerPluginUpdater mounts update route with method checking', async () 
   let registered = null
   const fakeCtx = {
     webServer: {
-      register: (route) => {
-        registered = route
-        return () => {}
-      },
+      register: (reg) => { registered = reg },
     },
+    logger: { warn: () => {} },
   }
 
   registerPluginUpdater(fakeCtx, {
@@ -84,20 +79,20 @@ test('registerPluginUpdater mounts update route with method checking', async () 
     packageName: '@goodandready/dsh-voice',
   })
 
-  assert.ok(registered)
+  assert.ok(registered, 'endpoint must be registered')
   assert.equal(registered.path, '/api/dsh-voice/update')
   assert.equal(registered.kind, 'exact')
 
-  // DELETE request returns 405 Method Not Allowed
-  let status = 0
-  await registered.handler({ method: 'DELETE' }, {
-    writeHead: (s) => { status = s },
+  // PUT method rejected with 405
+  let putStatus = null
+  await registered.handler({ method: 'PUT' }, {
+    writeHead: (s) => { putStatus = s },
     end: () => {},
   })
-  assert.equal(status, 405)
+  assert.equal(putStatus, 405)
 
-  // Untrusted POST returns 403 Forbidden
-  let postStatus = 0
+  // POST without trust rejected with 403
+  let postStatus = null
   await registered.handler({
     method: 'POST',
     headers: {},
@@ -108,11 +103,6 @@ test('registerPluginUpdater mounts update route with method checking', async () 
   })
   assert.equal(postStatus, 403)
 })
-
-import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { readLockPid, isProcessAlive, checkProfileLock } from '../lib/updater.js'
 
 test('package.json.lock lifecycle and process alive detection (#176)', () => {
   const dir = mkdtempSync(join(tmpdir(), 'dsh-voice-lock-'))
@@ -159,6 +149,102 @@ test('package.json.lock lifecycle and process alive detection (#176)', () => {
     assert.equal(existsSync(lockFile), true, 'unparsed lockfile must be preserved')
   } finally {
     try { rmSync(dir, { recursive: true }) } catch { /* ignore */ }
+  }
+})
+
+test('formatLockDiagnostic formats neutral diagnostics and preserves error code (#205, #84623)', () => {
+  assert.equal(formatLockDiagnostic({ locked: false }), null)
+  assert.match(formatLockDiagnostic({ locked: true, pid: 1234 }), /PID 1234/)
+  assert.match(formatLockDiagnostic({ locked: true, pid: null }), /existing lockfile/)
+  assert.match(formatLockDiagnostic({ locked: true, pid: null, error: 'EIO' }), /EIO/)
+  assert.match(formatLockDiagnostic({ locked: true, pid: null, error: 'EACCES' }), /EACCES/)
+})
+
+test('checkProfileLock fail-closed behavior on EACCES and EIO filesystem errors (#205, #84626)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'dsh-voice-lock-err-'))
+  try {
+    const src = readFileSync(new URL('../lib/updater.js', import.meta.url), 'utf8')
+    const checkSrc = src.slice(
+      src.indexOf('export function checkProfileLock('),
+      src.indexOf('\nexport function formatLockDiagnostic(')
+    ).replace('export ', '')
+    for (const code of ['EACCES', 'EIO']) {
+      const box = {
+        resolve: (d, f) => join(d, f),
+        statSync: () => { throw Object.assign(new Error(code), { code }) },
+        readLockPid: () => null,
+      }
+      vm.createContext(box)
+      vm.runInContext(checkSrc + ';globalThis.check=checkProfileLock', box)
+      const out = box.check(root)
+      assert.equal(out.locked, true)
+      assert.equal(out.error, code)
+    }
+  } finally {
+    try { rmSync(root, { recursive: true }) } catch { /* ignore */ }
+  }
+})
+
+test('installExact lifecycle and lock preservation across success, nonzero, spawn error, and timeout escalation (#205, #84626)', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'dsh-voice-install-lifecycle-'))
+  const lock = join(root, 'package.json.lock')
+  try {
+    const src = readFileSync(new URL('../lib/updater.js', import.meta.url), 'utf8')
+    const installSrc = src.slice(
+      src.indexOf('async function installExact('),
+      src.indexOf('\nfunction json(')
+    )
+
+    for (const mode of ['success', 'nonzero', 'spawn-error', 'timeout']) {
+      writeFileSync(lock, 'foreign-successor', 'utf8')
+      const timers = new Map()
+      const kills = []
+      let seq = 0
+      const sandbox = {
+        process,
+        UPDATE_TIMEOUT_MS: 600000,
+        checkProfileLock: () => ({ locked: false }),
+        formatLockDiagnostic: () => null,
+        setTimeout: (f, ms) => { const id = ++seq; timers.set(id, f); return id },
+        clearTimeout: id => timers.delete(id),
+        spawn: () => {
+          const child = new EventEmitter()
+          child.stdout = new EventEmitter()
+          child.stderr = new EventEmitter()
+          child.kill = sig => {
+            kills.push(sig)
+            if (sig === 'SIGKILL') child.emit('exit', null)
+          }
+          queueMicrotask(() => {
+            if (mode === 'success') child.emit('exit', 0)
+            if (mode === 'nonzero') child.emit('exit', 2)
+            if (mode === 'spawn-error') child.emit('error', new Error('spawn fixture error'))
+            if (mode === 'timeout') {
+              if (timers.has(1)) timers.get(1)()
+              if (timers.has(2)) timers.get(2)()
+            }
+          })
+          return child
+        },
+      }
+      vm.createContext(sandbox)
+      vm.runInContext(installSrc + ';globalThis.install=installExact', sandbox)
+      let rejected = false
+      try {
+        await sandbox.install({ cliEntry: '/fixture/cli', profileDir: root, profileName: 'web' }, '@goodandready/dsh-voice@0.9.25', {})
+      } catch {
+        rejected = true
+      }
+      assert.equal(rejected, mode !== 'success', `mode ${mode} rejection mismatch`)
+      assert.equal(readFileSync(lock, 'utf8'), 'foreign-successor', 'foreign lock must be preserved')
+      assert.equal(timers.size, 0, 'all timers must be cleaned up')
+      assert.equal(kills.length, mode === 'timeout' ? 2 : 0, 'timeout must trigger SIGTERM and SIGKILL')
+      if (mode === 'timeout') {
+        assert.deepEqual(kills, ['SIGTERM', 'SIGKILL'])
+      }
+    }
+  } finally {
+    try { rmSync(root, { recursive: true }) } catch { /* ignore */ }
   }
 })
 

@@ -226,16 +226,21 @@ Registers `transcribe_audio(file_path, language?)` in `ctx.tools`, allowing agen
 * `POST /api/dsh-voice/update` — Triggers plugin self-update to latest compatible npm version (protected by local caller verification and profile lock check).
 * `GET /api/dsh-voice/update` — Returns update check status (current version, latest version, updateAvailable).
 
-### 🔒 Profile Lock & Operator Recovery Policy
-When updating or installing plugins, DeepSeek Harness profiles coordinate concurrent operations using `<profile-dir>/package.json.lock`.
+### 🔒 Profile Lock & Controlled Operator Recovery Policy
+When updating or installing plugins, DeepSeek Harness profiles coordinate concurrent operations using `<profile-dir>/package.json.lock` (for example, `~/.dsh/profiles/<profile>/package.json.lock`).
 * **Canonical Contender Policy**: The contender process never deletes or unlinks an existing lockfile. Automatic stale lock removal by contenders is prohibited to eliminate TOCTOU (Time-of-Check to Time-of-Use) race conditions and prevent unintended lockfile clobbering.
 * **Diagnostics**: If `<profile-dir>/package.json.lock` is present, update attempts return `409 Conflict` with clear diagnostics:
   - If held by an active process, the PID is reported.
-  - If filesystem inspection encounters access errors (`EACCES`, `EIO`), the operation fails closed with the error code preserved.
-* **Operator Recovery**: If a prior installation process was forcefully killed or terminated unexpectedly (e.g. system OOM or power outage), manual operator recovery is required:
-  ```bash
-  rm /home/vadim/.dsh/profiles/web/package.json.lock
-  ```
+  - If filesystem inspection encounters access errors (`EACCES`, `EIO`), the operation fails closed with the error code preserved. Filesystem errors require inspecting filesystem health, permissions, or mount options — **do not** remove the lockfile in response to `EACCES`/`EIO`.
+* **Controlled Operator Recovery Workflow**:
+  If a previous installation was forcefully interrupted (e.g. system crash, OOM kill) leaving a stale lockfile, recovery is strictly an operator action and must follow this controlled procedure:
+  1. **Establish Exclusive Maintenance**: Ensure no concurrent processes, CLI commands (`dsh plugin add`), web UI operations, or automated updaters are running or scheduled to start for the target profile.
+  2. **Verify Quiescence and Ownership**: Check for active processes (`pgrep`, `ps`, `fuser`, or `lsof`) to confirm that no live process is currently performing package operations in the target profile directory. Lock age alone or observing an unparsed PID is **not** sufficient justification to delete a lock while another installer could start. If quiescence or non-ownership cannot be verified, do not remove the lock.
+  3. **Remove Confirmed Orphan Lock**: Only after confirming the lock is an orphan and exclusive maintenance is established, remove the specific profile lock without recursive or force flags:
+     ```bash
+     rm ~/.dsh/profiles/<profile>/package.json.lock
+     ```
+  4. **Resume Operations**: Re-enable installations and retry the plugin update.
 
 ---
 

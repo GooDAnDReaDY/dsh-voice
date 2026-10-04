@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.23
+
+### Fixed
+- **Profile Lock Final Observation Gap Closure (#205)**: Added immediate pre-unlink PID verification (`finalPid = readLockPid(lockPath)`) in `checkProfileLock`. Eliminates the observation window between `statSync` and `unlinkSync`, preventing successor lockfile deletion when a concurrent installer writes after the final stat check or writes with identical file metadata. Requires unanimous verification across all inspection reads before unlinking stale lockfiles.
+- **Audit Probe Coverage for Concurrent Stat Seams (#214)**: Added regression coverage in `test/audit-fixes.test.mjs` reproducing both `after-final-stat` and `same-stat-after-final-read` audit probe scenarios from comments #83241 and #83244 (241 passing tests).
+
 ## 0.9.22
 
 ### Fixed

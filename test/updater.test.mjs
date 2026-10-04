@@ -122,12 +122,12 @@ test('package.json.lock lifecycle and process alive detection (#176)', () => {
     // 1. No lock file
     assert.deepEqual(checkProfileLock(dir), { locked: false })
 
-    // 2. Lock file with dead PID (e.g. 9999999) -> cleaned up automatically
+    // 2. Lock file with dead PID (e.g. 9999999) -> preserved and reports locked under read-only policy (#205, #83969)
     writeFileSync(lockFile, '9999999', 'utf8')
     const deadCheck = checkProfileLock(dir)
-    assert.equal(deadCheck.locked, false)
-    assert.equal(deadCheck.cleanedStale, true)
-    assert.equal(existsSync(lockFile), false, 'stale lock must be removed')
+    assert.equal(deadCheck.locked, true)
+    assert.equal(deadCheck.pid, 9999999)
+    assert.equal(existsSync(lockFile), true, 'stale lock must be preserved without unlink')
 
     // 3. Lock file with current live PID -> reports locked
     writeFileSync(lockFile, String(process.pid), 'utf8')

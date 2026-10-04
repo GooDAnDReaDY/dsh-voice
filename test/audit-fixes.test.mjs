@@ -343,7 +343,7 @@ test('Issue #222: loadWebGpuWhisper shares in-flight Promise across concurrent l
   assert.equal(instA1, instA2)
 })
 
-test('Issue #205: checkProfileLock atomic rename coordinator prevents deleting successor live lock', () => {
+test('Issue #205: checkProfileLock read-only policy preserves lock on dead PID without unlink (#83969)', () => {
   const tmpDir = path.join(__dirname, '..', '.worktrees', 'test-lock-race-' + Date.now())
   fs.mkdirSync(tmpDir, { recursive: true })
   const lockFile = path.join(tmpDir, 'package.json.lock')
@@ -353,11 +353,11 @@ test('Issue #205: checkProfileLock atomic rename coordinator prevents deleting s
     const deadPid = 9999999
     fs.writeFileSync(lockFile, JSON.stringify({ pid: deadPid }), 'utf8')
 
-    // 2. Normal stale lock check unlinks dead lock
+    // 2. Lock check reports locked: true and preserves file (read-only policy)
     const res = checkProfileLock(tmpDir)
-    assert.equal(res.locked, false)
-    assert.equal(res.cleanedStale, true)
-    assert.equal(fs.existsSync(lockFile), false)
+    assert.equal(res.locked, true)
+    assert.equal(res.pid, deadPid)
+    assert.equal(fs.existsSync(lockFile), true, 'dead lockfile must be preserved without unlink')
 
     // 3. Write live PID (current process)
     fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid }), 'utf8')
@@ -820,7 +820,7 @@ test('Issue #198: session switch binds transcription and submitPending to initia
   assert.equal(voice.phase, 'idle')
 })
 
-test('Issue #205: checkProfileLock unlinks dead lock in-place without renaming away to protect successors', () => {
+test('Issue #205: checkProfileLock preserves dead lock in-place without removing to protect contenders (#83969)', () => {
   const tmpDir = path.join(__dirname, '..', '.worktrees', 'test-lock-successor-' + Date.now())
   fs.mkdirSync(tmpDir, { recursive: true })
   const lockFile = path.join(tmpDir, 'package.json.lock')
@@ -830,11 +830,11 @@ test('Issue #205: checkProfileLock unlinks dead lock in-place without renaming a
     const deadPid = 9999999
     fs.writeFileSync(lockFile, String(deadPid), 'utf8')
 
-    // 2. Run checkProfileLock
+    // 2. Run checkProfileLock -> reports locked: true and preserves file
     const out = checkProfileLock(tmpDir)
-    assert.equal(out.locked, false)
-    assert.equal(out.cleanedStale, true)
-    assert.equal(fs.existsSync(lockFile), false, 'dead lock should be unlinked')
+    assert.equal(out.locked, true)
+    assert.equal(out.pid, deadPid)
+    assert.equal(fs.existsSync(lockFile), true, 'dead lock must be preserved')
 
     // 3. Successor lock written concurrently with live PID
     fs.writeFileSync(lockFile, String(process.pid), 'utf8')
@@ -1023,24 +1023,19 @@ test('Issue #198: rejected insertText suppresses pending phase and prevents prem
   assert.equal(draft, 'seed user edited', 'user edit must be preserved')
 })
 
-test('Issue #205: checkProfileLock guards against deleting live successor lock written concurrently', () => {
+test('Issue #205: checkProfileLock read-only policy preserves live PID lock and guarantees zero deletion calls (#83969)', () => {
   const tmpDir = path.join(__dirname, '..', '.worktrees', 'test-lock-live-successor-' + Date.now())
   fs.mkdirSync(tmpDir, { recursive: true })
   const lock = path.join(tmpDir, 'package.json.lock')
-  fs.writeFileSync(lock, '99999999')
+  fs.writeFileSync(lock, String(process.pid))
 
   try {
-    let reads = 0
+    let unlinks = 0
     const sandbox = {
-      Date, Math, resolve: path.resolve, existsSync: fs.existsSync, statSync: fs.statSync, unlinkSync: fs.unlinkSync,
+      Date, Math, resolve: path.resolve, existsSync: fs.existsSync, statSync: fs.statSync,
+      unlinkSync: () => { unlinks++ },
       isProcessAlive: (p) => p === process.pid,
-      readLockPid: (p) => {
-        reads++
-        const observed = Number(fs.readFileSync(p, 'utf8'))
-        // Concurrent writer acquires live lock at read 2
-        if (reads === 2) fs.writeFileSync(p, String(process.pid))
-        return observed
-      },
+      readLockPid: (p) => Number(fs.readFileSync(p, 'utf8')),
     }
 
     const src = fs.readFileSync(path.join(__dirname, '..', 'lib', 'updater.js'), 'utf8')
@@ -1049,9 +1044,10 @@ test('Issue #205: checkProfileLock guards against deleting live successor lock w
     vm.runInContext(fn + ';globalThis.check=checkProfileLock;', sandbox)
 
     const out = sandbox.check(tmpDir)
-    assert.equal(out.locked, true, 'must detect live successor lock')
-    assert.equal(out.pid, process.pid, 'must report live successor PID')
-    assert.equal(fs.existsSync(lock), true, 'live successor lock must not be deleted')
+    assert.equal(out.locked, true, 'must report locked: true for live process')
+    assert.equal(out.pid, process.pid, 'must report live process PID')
+    assert.equal(unlinks, 0, 'unlink must never be called on lockfile')
+    assert.equal(fs.existsSync(lock), true, 'live lock must remain intact')
   } finally {
     try {
       if (fs.existsSync(lock)) fs.unlinkSync(lock)
@@ -1059,7 +1055,6 @@ test('Issue #205: checkProfileLock guards against deleting live successor lock w
     } catch (_) {}
   }
 })
-
 test('Issue #191: localDaemons reads child.readOutput() and handles result rejection for spawn failure stderr', async () => {
   let reads = 0
   let results = 0
@@ -1107,24 +1102,20 @@ test('Issue #191: localDaemons reads child.readOutput() and handles result rejec
   }
 })
 
-test('Issue #205: checkProfileLock guards against deleting live successor lock written on subsequent read', () => {
+test('Issue #205: checkProfileLock read-only policy preserves dead PID lock and guarantees zero deletion calls (#83969)', () => {
   const tmpDir = path.join(__dirname, '..', '.worktrees', 'test-lock-live-subsequent-' + Date.now())
   fs.mkdirSync(tmpDir, { recursive: true })
   const lock = path.join(tmpDir, 'package.json.lock')
-  fs.writeFileSync(lock, '99999999')
+  const deadPid = 99999999
+  fs.writeFileSync(lock, String(deadPid))
 
   try {
-    let reads = 0
+    let unlinks = 0
     const sandbox = {
-      Date, Math, resolve: path.resolve, existsSync: fs.existsSync, statSync: fs.statSync, unlinkSync: fs.unlinkSync,
+      Date, Math, resolve: path.resolve, existsSync: fs.existsSync, statSync: fs.statSync,
+      unlinkSync: () => { unlinks++ },
       isProcessAlive: (p) => p === process.pid,
-      readLockPid: (p) => {
-        reads++
-        const observed = Number(fs.readFileSync(p, 'utf8'))
-        // Concurrent writer acquires live lock on third read
-        if (reads === 3) fs.writeFileSync(p, String(process.pid))
-        return observed
-      },
+      readLockPid: (p) => Number(fs.readFileSync(p, 'utf8')),
     }
 
     const src = fs.readFileSync(path.join(__dirname, '..', 'lib', 'updater.js'), 'utf8')
@@ -1133,9 +1124,10 @@ test('Issue #205: checkProfileLock guards against deleting live successor lock w
     vm.runInContext(fn + ';globalThis.check=checkProfileLock;', sandbox)
 
     const out = sandbox.check(tmpDir)
-    assert.equal(out.locked, true, 'must detect live successor lock')
-    assert.equal(out.pid, process.pid, 'must report live successor PID')
-    assert.equal(fs.existsSync(lock), true, 'live successor lock must not be deleted')
+    assert.equal(out.locked, true, 'must report locked: true for dead PID (read-only policy)')
+    assert.equal(out.pid, deadPid, 'must report observed PID for diagnostics')
+    assert.equal(unlinks, 0, 'unlink must never be called on foreign lock')
+    assert.equal(fs.existsSync(lock), true, 'dead lock must remain intact on disk')
   } finally {
     try {
       if (fs.existsSync(lock)) fs.unlinkSync(lock)
@@ -1143,7 +1135,6 @@ test('Issue #205: checkProfileLock guards against deleting live successor lock w
     } catch (_) {}
   }
 })
-
 test('Issue #191: localDaemons does not block readiness poll on pending result while process is running', async () => {
   for (const kind of ['whisper', 'sensevoice']) {
     const savedFetch = globalThis.fetch
@@ -1223,24 +1214,21 @@ test('Issue #191: localDaemons does not block readiness poll on pending result w
   }
 })
 
-test('Issue #205: checkProfileLock guards against deleting live successor lock written on final fourth read (stat verification)', () => {
+test('Issue #205: checkProfileLock read-only policy preserves empty/invalid lock even if aged > 10m (#83969)', () => {
   const tmpDir = path.join(__dirname, '..', '.worktrees', 'test-lock-live-fourth-' + Date.now())
   fs.mkdirSync(tmpDir, { recursive: true })
   const lock = path.join(tmpDir, 'package.json.lock')
-  fs.writeFileSync(lock, '99999999')
+  fs.writeFileSync(lock, '')
+  const past = new Date(Date.now() - 3600_000)
+  fs.utimesSync(lock, past, past)
 
   try {
-    let reads = 0
+    let unlinks = 0
     const sandbox = {
-      Date, Math, resolve: path.resolve, existsSync: fs.existsSync, statSync: fs.statSync, unlinkSync: fs.unlinkSync,
+      Date, Math, resolve: path.resolve, existsSync: fs.existsSync, statSync: fs.statSync,
+      unlinkSync: () => { unlinks++ },
       isProcessAlive: (p) => p === process.pid,
-      readLockPid: (p) => {
-        reads++
-        const observed = Number(fs.readFileSync(p, 'utf8'))
-        // Concurrent writer acquires live lock on fourth read (final-lock.mjs probe)
-        if (reads === 4) fs.writeFileSync(p, String(process.pid))
-        return observed
-      },
+      readLockPid: () => null,
     }
 
     const src = fs.readFileSync(path.join(__dirname, '..', 'lib', 'updater.js'), 'utf8')
@@ -1249,9 +1237,10 @@ test('Issue #205: checkProfileLock guards against deleting live successor lock w
     vm.runInContext(fn + ';globalThis.check=checkProfileLock;', sandbox)
 
     const out = sandbox.check(tmpDir)
-    assert.equal(out.locked, true, 'must detect live successor lock')
-    assert.equal(out.pid, process.pid, 'must report live successor PID')
-    assert.equal(fs.existsSync(lock), true, 'live successor lock must not be deleted')
+    assert.equal(out.locked, true, 'must report locked: true for empty lock')
+    assert.equal(out.pid, null, 'PID is null for empty lock')
+    assert.equal(unlinks, 0, 'unlink must never be called regardless of age')
+    assert.equal(fs.existsSync(lock), true, 'aged lock must not be deleted')
   } finally {
     try {
       if (fs.existsSync(lock)) fs.unlinkSync(lock)
@@ -1259,28 +1248,23 @@ test('Issue #205: checkProfileLock guards against deleting live successor lock w
     } catch (_) {}
   }
 })
-
-test('Issue #205: checkProfileLock guards against deleting live successor lock written after final stat (comment #83244)', () => {
+test('Issue #205: checkProfileLock fails closed on stat EACCES/EIO errors and never reports unlocked (#83969)', () => {
   const tmpDir = path.join(__dirname, '..', '.worktrees', 'test-lock-live-stat-' + Date.now())
   fs.mkdirSync(tmpDir, { recursive: true })
   const lock = path.join(tmpDir, 'package.json.lock')
   fs.writeFileSync(lock, '99999999')
 
   try {
-    let reads = 0
-    let stats = 0
+    let unlinks = 0
     const sandbox = {
-      Date, Math, resolve: path.resolve, existsSync: fs.existsSync, unlinkSync: fs.unlinkSync,
+      Date, Math, resolve: path.resolve, existsSync: fs.existsSync,
+      unlinkSync: () => { unlinks++ },
       isProcessAlive: (p) => p === process.pid,
-      readLockPid: (p) => {
-        reads++
-        return Number(fs.readFileSync(p, 'utf8'))
-      },
-      statSync: (p) => {
-        stats++
-        const observed = fs.statSync(p)
-        if (stats === 2) fs.writeFileSync(p, String(process.pid))
-        return observed
+      readLockPid: () => null,
+      statSync: () => {
+        const err = new Error('Permission denied')
+        err.code = 'EACCES'
+        throw err
       },
     }
 
@@ -1290,9 +1274,10 @@ test('Issue #205: checkProfileLock guards against deleting live successor lock w
     vm.runInContext(fn + ';globalThis.check=checkProfileLock;', sandbox)
 
     const out = sandbox.check(tmpDir)
-    assert.equal(out.locked, true, 'must detect live successor lock written after final stat')
-    assert.equal(out.pid, process.pid, 'must report live successor PID')
-    assert.equal(fs.existsSync(lock), true, 'live successor lock must not be deleted')
+    assert.equal(out.locked, true, 'stat error must fail closed and report locked: true')
+    assert.equal(out.error, 'EACCES', 'must preserve error code for diagnostics')
+    assert.equal(unlinks, 0, 'unlink must never be called on stat error')
+    assert.equal(fs.existsSync(lock), true)
   } finally {
     try {
       if (fs.existsSync(lock)) fs.unlinkSync(lock)
@@ -1300,33 +1285,23 @@ test('Issue #205: checkProfileLock guards against deleting live successor lock w
     } catch (_) {}
   }
 })
-
-test('Issue #205: checkProfileLock guards against same-size successor with unchanged metadata (comment #83244)', () => {
+test('Issue #205: checkProfileLock preserves successor lock when replaced during inspection (#83969)', () => {
   const tmpDir = path.join(__dirname, '..', '.worktrees', 'test-lock-live-samestat-' + Date.now())
   fs.mkdirSync(tmpDir, { recursive: true })
   const lock = path.join(tmpDir, 'package.json.lock')
   fs.writeFileSync(lock, '99999999')
 
   try {
-    let reads = 0
-    let stats = 0
-    const baseline = fs.statSync(lock)
+    let unlinks = 0
     const sandbox = {
-      Date, Math, resolve: path.resolve, existsSync: fs.existsSync, unlinkSync: fs.unlinkSync,
+      Date, Math, resolve: path.resolve, existsSync: fs.existsSync,
+      unlinkSync: () => { unlinks++ },
       isProcessAlive: (p) => p === process.pid,
       readLockPid: (p) => {
-        reads++
-        const observed = Number(fs.readFileSync(p, 'utf8'))
-        if (reads === 4) {
-          fs.writeFileSync(p, String(process.pid).padStart(8, '0'))
-          fs.utimesSync(p, baseline.atime, baseline.mtime)
-        }
-        return observed
+        fs.writeFileSync(p, String(process.pid))
+        return process.pid
       },
-      statSync: (p) => {
-        stats++
-        return baseline
-      },
+      statSync: (p) => fs.statSync(p),
     }
 
     const src = fs.readFileSync(path.join(__dirname, '..', 'lib', 'updater.js'), 'utf8')
@@ -1335,9 +1310,10 @@ test('Issue #205: checkProfileLock guards against same-size successor with uncha
     vm.runInContext(fn + ';globalThis.check=checkProfileLock;', sandbox)
 
     const out = sandbox.check(tmpDir)
-    assert.equal(out.locked, true, 'must detect live successor lock even if metadata is unchanged')
-    assert.equal(out.pid, process.pid, 'must report live successor PID')
-    assert.equal(fs.existsSync(lock), true, 'live successor lock must not be deleted')
+    assert.equal(out.locked, true, 'must report locked: true')
+    assert.equal(out.pid, process.pid, 'must report successor live PID')
+    assert.equal(unlinks, 0, 'unlink must never be called')
+    assert.equal(fs.existsSync(lock), true, 'live successor lock must remain on disk')
   } finally {
     try {
       if (fs.existsSync(lock)) fs.unlinkSync(lock)
@@ -1345,18 +1321,17 @@ test('Issue #205: checkProfileLock guards against same-size successor with uncha
     } catch (_) {}
   }
 })
-
-test('Issue #205: checkProfileLock guards against live successor written on fifth read observation (comment #83598)', () => {
+test('Issue #205: checkProfileLock passes independent audit probe #83719 counterexample with zero unlinks (#83969)', () => {
   const tmpDir = path.join(__dirname, '..', '.worktrees', 'test-lock-live-fifthread-' + Date.now())
   fs.mkdirSync(tmpDir, { recursive: true })
   const lock = path.join(tmpDir, 'package.json.lock')
   fs.writeFileSync(lock, '99999999')
 
   try {
-    let reads = 0
-    let stats = 0
+    let reads = 0, stats = 0, unlinks = 0
     const sandbox = {
-      Date, Math, resolve: path.resolve, existsSync: fs.existsSync, unlinkSync: fs.unlinkSync,
+      Date, Math, resolve: path.resolve, existsSync: fs.existsSync,
+      unlinkSync: () => { unlinks++ },
       isProcessAlive: (p) => p === process.pid,
       statSync: (p) => {
         stats++
@@ -1364,11 +1339,7 @@ test('Issue #205: checkProfileLock guards against live successor written on fift
       },
       readLockPid: (p) => {
         reads++
-        const observed = Number(fs.readFileSync(p, 'utf8'))
-        if (reads === 5) {
-          fs.writeFileSync(p, String(process.pid))
-        }
-        return observed
+        return Number(fs.readFileSync(p, 'utf8'))
       },
     }
 
@@ -1378,9 +1349,10 @@ test('Issue #205: checkProfileLock guards against live successor written on fift
     vm.runInContext(fn + ';globalThis.check=checkProfileLock;', sandbox)
 
     const out = sandbox.check(tmpDir)
-    assert.equal(out.locked, true, 'must detect live successor lock written on fifth read observation')
-    assert.equal(out.pid, process.pid, 'must report live successor PID')
-    assert.equal(fs.existsSync(lock), true, 'live successor lock must not be deleted')
+    assert.equal(out.locked, true, 'must report locked: true for existing lock')
+    assert.equal(out.pid, 99999999)
+    assert.equal(unlinks, 0, 'zero unlinks invariant')
+    assert.equal(fs.existsSync(lock), true, 'successor lock must not be deleted')
   } finally {
     try {
       if (fs.existsSync(lock)) fs.unlinkSync(lock)

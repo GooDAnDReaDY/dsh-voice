@@ -108,12 +108,12 @@ test('Issue #176: package.json.lock handling and supply chain options', async ()
   const lock = join(dir, 'package.json.lock')
 
   try {
-    // Dead PID lock -> cleaned up
+    // Dead PID lock -> preserved and reports locked under read-only policy (#205, #83969)
     writeFileSync(lock, '9999991\n')
     const check1 = checkProfileLock(dir)
-    assert.equal(check1.locked, false)
-    assert.equal(check1.cleanedStale, true)
-    assert.equal(existsSync(lock), false)
+    assert.equal(check1.locked, true)
+    assert.equal(check1.pid, 9999991)
+    assert.equal(existsSync(lock), true)
 
     // Live PID lock -> locked
     writeFileSync(lock, String(process.pid))

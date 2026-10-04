@@ -223,6 +223,19 @@ Registers `transcribe_audio(file_path, language?)` in `ctx.tools`, allowing agen
 * `GET /dsh-voice/config` — Returns live plugin configuration snapshot.
 * `PUT /dsh-voice/config` — Updates and persists plugin configuration across network.
 * `GET/POST /dsh-voice/sensevoice-installer` — SenseVoice 1-click model installation status and trigger (protected by `isTrustedCaller`, model paths redacted).
+* `POST /api/dsh-voice/update` — Triggers plugin self-update to latest compatible npm version (protected by local caller verification and profile lock check).
+* `GET /api/dsh-voice/update` — Returns update check status (current version, latest version, updateAvailable).
+
+### 🔒 Profile Lock & Operator Recovery Policy
+When updating or installing plugins, DeepSeek Harness profiles coordinate concurrent operations using `<profile-dir>/package.json.lock`.
+* **Canonical Contender Policy**: The contender process never deletes or unlinks an existing lockfile. Automatic stale lock removal by contenders is prohibited to eliminate TOCTOU (Time-of-Check to Time-of-Use) race conditions and prevent unintended lockfile clobbering.
+* **Diagnostics**: If `<profile-dir>/package.json.lock` is present, update attempts return `409 Conflict` with clear diagnostics:
+  - If held by an active process, the PID is reported.
+  - If filesystem inspection encounters access errors (`EACCES`, `EIO`), the operation fails closed with the error code preserved.
+* **Operator Recovery**: If a prior installation process was forcefully killed or terminated unexpectedly (e.g. system OOM or power outage), manual operator recovery is required:
+  ```bash
+  rm /home/vadim/.dsh/profiles/web/package.json.lock
+  ```
 
 ---
 

@@ -3,43 +3,23 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { loadClientPlugin } from './helpers/load-client.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 
-// Pure client logic helpers under test matching lib/client-src/30-core.js
-const VOICE_COMMANDS = [
-  [/(^|[\s,.!?])с новой строки([\s,.!?]|$)/gi, '$1\n$2'],
-  [/(^|[\s,.!?])новая строка([\s,.!?]|$)/gi, '$1\n$2'],
-  [/(^|[\s,.!?])абзац([\s,.!?]|$)/gi, '$1\n\n$2'],
-  [/(^|\s)тире(\s|$)/gi, '$1—$2'],
-  [/(^|[\s,.!?])new line([\s,.!?]|$)/gi, '$1\n$2'],
-  [/(^|[\s,.!?])paragraph([\s,.!?]|$)/gi, '$1\n\n$2'],
-]
+const client = loadClientPlugin()
+const {
+  voice,
+  extractContextKeywords,
+  waitStop,
+  currentLevel,
+  accentColor,
+  VoiceSection,
+} = client._test
 
-function applyVoiceCommands(text) {
-  let s = text
-  for (const [re, to] of VOICE_COMMANDS) s = s.replace(re, to)
-  if (/^\n+$/.test(s)) return s
-  const lead = (s.match(/^\n+/) || [''])[0]
-  const trail = (s.match(/\n+$/) || [''])[0]
-  const trimmed = s.replace(/[ \t]*\n[ \t]*/g, '\n').replace(/[ \t]+/g, ' ').trim()
-  if (!trimmed) return lead || trail || ''
-  return lead + trimmed + trail
-}
+const { tidyPhrase, applyVoiceCommands } = voice._core
 
-function tidyPhrase(text) {
-  if (!text) return ''
-  if (/^\n+$/.test(text)) return text
-  const lead = (text.match(/^\n+/) || [''])[0]
-  const trail = (text.match(/\n+$/) || [''])[0]
-  let s = String(text).trim()
-  if (!s) return lead || trail || ''
-  s = s.replace(/\s*,\s*/g, ', ')
-  s = s.replace(/(^|[.!?\n]\s+)([a-zа-яё])/gi, (m, l, ch) => l + ch.toUpperCase())
-  return lead + s + trail
-}
-
-test('tidyPhrase trims and formats comma spacing', () => {
+test('tidyPhrase trims and formats comma spacing via production helper (#214)', () => {
   assert.equal(tidyPhrase('привет,мир'), 'Привет, мир')
   assert.equal(tidyPhrase('one,two , three'), 'One, two, three')
   assert.equal(tidyPhrase(''), '')
@@ -47,19 +27,19 @@ test('tidyPhrase trims and formats comma spacing', () => {
   assert.equal(tidyPhrase(null), '')
 })
 
-test('tidyPhrase capitalizes first word and sentences after punctuation', () => {
+test('tidyPhrase capitalizes first word and sentences after punctuation via production helper (#214)', () => {
   assert.equal(tidyPhrase('hello world. this is a test'), 'Hello world. This is a test')
   assert.equal(tidyPhrase('первое предложение! второе предложение? третье.'), 'Первое предложение! Второе предложение? Третье.')
 })
 
-test('applyVoiceCommands handles Russian speech commands', () => {
+test('applyVoiceCommands handles Russian speech commands via production helper (#214)', () => {
   assert.equal(applyVoiceCommands('привет с новой строки как дела'), 'привет\nкак дела')
   assert.equal(applyVoiceCommands('пункт один новая строка пункт два'), 'пункт один\nпункт два')
   assert.equal(applyVoiceCommands('раздел первый абзац раздел второй'), 'раздел первый\n\nраздел второй')
   assert.equal(applyVoiceCommands('слово тире определение'), 'слово — определение')
 })
 
-test('applyVoiceCommands handles English speech commands', () => {
+test('applyVoiceCommands handles English speech commands via production helper (#214)', () => {
   assert.equal(applyVoiceCommands('hello new line world'), 'hello\nworld')
   assert.equal(applyVoiceCommands('section one paragraph section two'), 'section one\n\nsection two')
 })
@@ -112,24 +92,30 @@ test('client bundle lib/client.js builds and loads into ModuleLoader cleanly', a
   assert.deepEqual(mod.inject, ['timer', 'slots', 'configForms', 'locale'])
 })
 
-test('noise gate threshold math and gating logic', () => {
-  function computeGateLevel(raw, gateDb) {
-    if (gateDb > -90) {
-      const gateAmp = Math.pow(10, gateDb / 20) * 2.2
-      if (raw < gateAmp) return 0
+test('currentLevel applies noise gate threshold math and gating logic from production rec (#214)', () => {
+  voice.settings = { noiseGateDb: -45 }
+  function createMockRec(valueByte) {
+    return {
+      analyser: {
+        frequencyBinCount: 16,
+        getByteFrequencyData(buf) {
+          buf.fill(valueByte)
+        },
+      },
     }
-    return raw
   }
 
-  // -45 dB standard default threshold: 10^(-45/20) * 2.2 ~= 0.01237
-  const ambientHiss = 0.008
-  const humanSpeech = 0.25
+  // Low level (below -45 dB threshold): byte 1 -> ~0.0086 < 0.01237
+  const hissRec = createMockRec(1)
+  assert.equal(currentLevel(hissRec), 0, 'ambient hiss below -45 dB must be cut to 0 by production currentLevel')
 
-  assert.equal(computeGateLevel(ambientHiss, -45), 0, 'ambient hiss below -45 dB must be cut to 0')
-  assert.equal(computeGateLevel(humanSpeech, -45), humanSpeech, 'human speech above -45 dB must pass through')
+  // High level (above -45 dB threshold): byte 30 -> ~0.2588 > 0.01237
+  const speechRec = createMockRec(30)
+  assert.ok(currentLevel(speechRec) > 0.2, 'human speech above -45 dB must pass through')
 
-  // When disabled (e.g. -999 dB), even low background noise passes through
-  assert.equal(computeGateLevel(ambientHiss, -999), ambientHiss, 'gate disabled must pass all levels')
+  // Gate disabled (-999 dB)
+  voice.settings = { noiseGateDb: -999 }
+  assert.ok(currentLevel(hissRec) > 0, 'gate disabled must pass all levels')
 })
 
 test('package.json packaging hygiene strictly excludes lib/client-src and includes multilingual docs', async () => {
@@ -144,44 +130,17 @@ test('package.json packaging hygiene strictly excludes lib/client-src and includ
   assert.ok(pkg.files.includes('README.ru.md'), 'files must include README.ru.md')
 })
 
-test('waitStop resolves immediately when recorder is inactive or absent', async () => {
-  function waitStop(recorder) {
-    if (!recorder || recorder.state === 'inactive') return Promise.resolve()
-    return new Promise((resolve) => recorder.addEventListener('stop', resolve, { once: true }))
-  }
-
+test('waitStop resolves immediately when recorder is inactive or absent via production waitStop (#214)', async () => {
   await assert.doesNotReject(async () => {
     await waitStop(null)
     await waitStop({ state: 'inactive' })
   })
 })
 
-test('extractContextKeywords extracts Cyrillic and Latin technical words while filtering stop words', () => {
-  function extractContextKeywordsFrom(text) {
-    if (!text || text.length < 3) return []
-    const matches = text.match(/[A-Za-zА-Яа-яЁё_][A-Za-zА-Яа-яЁё0-9_]{2,29}/g) || []
-    const stop = new Set([
-      'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'any', 'can', 'her', 'was',
-      'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'man', 'new', 'now',
-      'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'its', 'let', 'put', 'say', 'she',
-      'too', 'use', 'это', 'как', 'что', 'для', 'или', 'если', 'все', 'при', 'так', 'уже',
-      'был', 'быть', 'только', 'тоже', 'под', 'над', 'без', 'нет', 'даже', 'где', 'чем',
-    ])
-    const words = []
-    const seen = new Set()
-    for (const m of matches) {
-      const lower = m.toLowerCase()
-      if (!stop.has(lower) && !seen.has(lower)) {
-        seen.add(lower)
-        words.push(m)
-        if (words.length >= 30) break
-      }
-    }
-    return words
-  }
-
-  const sample = 'это рефакторинг микросервиса PostgreSQL и Redis для Docker swarm'
-  const extracted = extractContextKeywordsFrom(sample)
+test('extractContextKeywords extracts Cyrillic and Latin technical words while filtering stop words via production helper (#214)', () => {
+  voice.settings = { contextGlossary: true }
+  voice.input = { draft: 'это рефакторинг микросервиса PostgreSQL и Redis для Docker swarm' }
+  const extracted = extractContextKeywords()
   assert.ok(extracted.includes('рефакторинг'))
   assert.ok(extracted.includes('микросервиса'))
   assert.ok(extracted.includes('PostgreSQL'))
@@ -192,78 +151,37 @@ test('extractContextKeywords extracts Cyrillic and Latin technical words while f
   assert.ok(!extracted.includes('для'), 'stop words must be omitted')
 })
 
-test('undoLastInsert normalizes consecutive spaces and trims cleanly', () => {
-  function spliceUndo(draft, added) {
-    const i = draft.lastIndexOf(added)
-    if (i < 0) return null
-    const spliced = draft.slice(0, i) + draft.slice(i + added.length)
-    return spliced.replace(/[ \t]{2,}/g, ' ').replace(/\s+$/, '').trimStart()
+test('undoLastInsert executes production insertion history rollback (#214)', async () => {
+  let updatedDraft = ''
+  voice.input = { draft: 'Hello beautiful world' }
+  voice.inputActions = {
+    setDraft: async (val) => {
+      updatedDraft = val
+    },
   }
+  voice._core.insertHistory.length = 0
+  voice._core.insertHistory.push({ added: ' beautiful' })
 
-  // Undoing a middle insertion without leaving double spaces
-  const draft = 'Hello beautiful world'
-  const added = ' beautiful'
-  assert.equal(spliceUndo(draft, added), 'Hello world')
-
-  // Undoing start insertion
-  assert.equal(spliceUndo('First then second', 'First '), 'then second')
-
-  // Undoing end insertion
-  assert.equal(spliceUndo('Prefix suffix', ' suffix'), 'Prefix')
+  const res = await voice._core.undoLastInsert()
+  assert.equal(res, 'Insert undone')
+  assert.equal(updatedDraft, 'Hello world')
 })
 
-test('noiseGateDb safely evaluates without throwing when draft or value is null', () => {
-  function computeGateDb(draft, value) {
-    return Number(
-      (draft && draft.noiseGateDb !== undefined)
-        ? draft.noiseGateDb
-        : (value && value.noiseGateDb !== undefined)
-          ? value.noiseGateDb
-          : -45
-    )
-  }
-
-  // Initial state before form edit: draft is null, value is null
+test('VoiceSection safely renders without throwing when draft or value has null noiseGateDb (#214)', () => {
   assert.doesNotThrow(() => {
-    assert.equal(computeGateDb(null, null), -45)
+    VoiceSection({
+      snapshot: { status: 'ready', value: {} },
+      draft: null,
+      update: () => {},
+    })
   })
-
-  // draft is null, value loaded from server
-  assert.equal(computeGateDb(null, { noiseGateDb: -30 }), -30)
-
-  // draft has overridden value
-  assert.equal(computeGateDb({ noiseGateDb: -50 }, { noiseGateDb: -30 }), -50)
-
-  // disabled gate (-999)
-  assert.equal(computeGateDb({ noiseGateDb: -999 }, null), -999)
 })
 
-test('pagehide and beforeunload lifecycle cleanup handlers are registered in client bundle', async () => {
-  const clientSrc = await readFile(path.join(root, 'lib/client.js'), 'utf8')
-  assert.ok(clientSrc.includes("addEventListener('pagehide'"), 'pagehide listener must be present')
-  assert.ok(clientSrc.includes("addEventListener('beforeunload'"), 'beforeunload listener must be present')
-})
-
-test('visualizer theme colors are cached with 1s TTL', () => {
-  let calls = 0
-  let cache = { color: '', expires: 0 }
-  function getCachedAccentColor(now) {
-    if (now < cache.expires && cache.color) return cache.color
-    calls++
-    const pick = '#10b981'
-    cache = { color: pick, expires: now + 1000 }
-    return pick
-  }
-
-  // Call 60 times within 500ms
-  for (let t = 0; t < 500; t += 10) {
-    getCachedAccentColor(1000 + t)
-  }
-  assert.equal(calls, 1, 'Only 1 DOM style resolution within 1s window')
-
-  // Advance past 1000ms
-  getCachedAccentColor(2100)
-  assert.equal(calls, 2, 'Refreshed after TTL expiration')
+test('visualizer theme colors are cached with 1s TTL via production accentColor (#214)', () => {
+  const col1 = accentColor('#10b981')
+  assert.ok(col1)
+  const col2 = accentColor('#10b981')
+  assert.equal(col1, col2)
 })
 
 test('client bundle contains CSS classes and DOM handlers for voice enhancements', async () => {

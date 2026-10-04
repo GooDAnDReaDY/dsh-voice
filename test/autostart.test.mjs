@@ -107,6 +107,19 @@ test('autostart dispatch lifecycle executes production apply and responds to set
   // Wait a microtask tick for async autostart promise
   await new Promise((r) => setTimeout(r, 600))
   assert.ok(shellExecuted >= 1, 'must trigger shell execution on settings watch update')
+
+  // 3. Modern DSH event trigger: loader/volatile-update triggers autostart
+  pingCount = 0
+  const prevShell = shellExecuted
+  currentConfig.autoStart = true
+  currentConfig.whisperModel = '/models/whisper-new.bin'
+  assert.equal(typeof eventListeners['loader/volatile-update'], 'function', 'loader/volatile-update listener registered')
+  assert.equal(typeof eventListeners['settings/document-updated'], 'function', 'settings/document-updated listener registered')
+  assert.equal(typeof eventListeners['config'], 'function', 'config listener registered')
+
+  eventListeners['loader/volatile-update']()
+  await new Promise((r) => setTimeout(r, 600))
+  assert.ok(shellExecuted > prevShell, 'must trigger shell execution on loader/volatile-update')
   } finally {
     globalThis.fetch = origFetch
   }

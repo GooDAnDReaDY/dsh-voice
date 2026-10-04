@@ -10,7 +10,7 @@ export function loadClientPlugin() {
       __ModuleLoader__: {
         load: (def) => {
           loaded = def.factory((mod) => {
-            if (mod === 'react') return { createElement: () => ({}), useState: () => [false, () => {}], useEffect: () => {} }
+            if (mod === 'react') return { createElement: () => ({}), useState: () => [false, () => {}], useEffect: () => {}, useCallback: (fn) => fn, useMemo: (fn) => fn(), useRef: (init) => ({ current: init }) }
             return {}
           })
         }

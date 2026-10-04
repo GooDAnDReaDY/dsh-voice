@@ -150,6 +150,8 @@ test("host routes behavioral execution: /status, /polish, /transcribe error and 
   assert.ok('whisperRunning' in statusPayload);
   assert.ok('sensevoiceRunning' in statusPayload);
   assert.ok('noiseGateDb' in statusPayload);
+  assert.ok('sensevoiceProvider' in statusPayload);
+  assert.ok('effectiveSensevoiceProvider' in statusPayload);
 
   // 2. /polish method guard: non-POST returns 405
   const polishGetReq = mockReq('GET');

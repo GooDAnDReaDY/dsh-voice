@@ -159,3 +159,33 @@ test('lib/index.js wires SenseVoice installer updateConfig to modern SettingsFor
   assert.match(indexSource, /settingsService\.update/, 'must support settingsService.update')
   assert.match(indexSource, /updateConfig: async \(patch\) => \{[\s\S]*?settingsService/, 'installer updateConfig must wire to settingsService')
 })
+
+import { resolveSensevoiceProvider } from '../lib/sensevoice-installer.js'
+
+test('resolveSensevoiceProvider truthfully resolves effective provider and CPU fallback (#221)', () => {
+  // 1. Default / unspecified provider resolves to cpu
+  assert.equal(resolveSensevoiceProvider({}), 'cpu')
+  assert.equal(resolveSensevoiceProvider({ sensevoiceProvider: 'cpu' }), 'cpu')
+  assert.equal(resolveSensevoiceProvider({ sensevoiceProvider: '' }), 'cpu')
+
+  // 2. Configured rknn with standard ONNX model resolves to cpu (truthful CPU fallback)
+  assert.equal(resolveSensevoiceProvider({
+    sensevoiceProvider: 'rknn',
+    sensevoiceModel: '/nonexistent/path/model.int8.onnx',
+  }), 'cpu')
+
+  // 3. Configured rknn with .rknn model resolves to rknn
+  assert.equal(resolveSensevoiceProvider({
+    sensevoiceProvider: 'rknn',
+    sensevoiceModel: '/opt/models/model.rknn',
+  }), 'rknn')
+
+  // 4. Legacy rknpu normalizes and behaves truthfully
+  assert.equal(resolveSensevoiceProvider({
+    sensevoiceProvider: 'rknpu',
+    sensevoiceModel: 'model.int8.onnx',
+  }), 'cpu')
+
+  // 5. Other custom providers pass through
+  assert.equal(resolveSensevoiceProvider({ sensevoiceProvider: 'cuda' }), 'cuda')
+})

@@ -104,3 +104,38 @@ test('createConfigReader decodes volatile nodes and caches unwrapped results', (
   assert.equal(cfg3.hotkey, 'Control')
   assert.equal(cfg3.dictation.language, 'ru')
 })
+
+import { plainConfig, isVolatileRef } from '../lib/index.js'
+
+test('plainConfig unwraps nested Volatile boxes, getters and functions (#227)', () => {
+  const volatileBox = { get: () => 'unwrapped-box-value' }
+  assert.equal(isVolatileRef(volatileBox), true)
+  assert.equal(isVolatileRef({ notABox: true }), false)
+  assert.equal(isVolatileRef(null), false)
+  assert.equal(isVolatileRef('string'), false)
+
+  const nested = {
+    topLevel: 'plain',
+    boxedField: { get: () => 42 },
+    getterFn: () => 'function-result',
+    nestedObj: {
+      innerBox: { get: () => ({ deep: { get: () => 'deep-value' } }) },
+    },
+    arrayField: [
+      { get: () => 'item-0' },
+      'item-1',
+      { sub: { get: () => 'item-2-sub' } },
+    ],
+  }
+
+  const unwrapped = plainConfig(nested)
+  assert.deepEqual(unwrapped, {
+    topLevel: 'plain',
+    boxedField: 42,
+    getterFn: 'function-result',
+    nestedObj: {
+      innerBox: { deep: 'deep-value' },
+    },
+    arrayField: ['item-0', 'item-1', { sub: 'item-2-sub' }],
+  })
+})

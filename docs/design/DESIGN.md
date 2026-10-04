@@ -131,3 +131,22 @@
   - Transparent graceful fallback: When WebGPU is not supported or initialization fails, `sendAudio` automatically falls through to the host fallback chain (/dsh-voice/transcribe) without interrupting user recording.
   - Local engine compatibility: `buildProviderOrder` in `lib/transcribe-core.js` includes `browser-webgpu` in `localEngines`, allowing fully offline operation under `localOnly: true`.
   - SBC NPU & multi-thread acceleration: Added `sensevoiceProvider` (options: `cpu`, `rknpu` for Rockchip RK3588 NPU, `openvino`, `cuda`) and `sensevoiceThreads` in `lib/schema.js` and `buildSensevoiceArgs` in `lib/sensevoice-installer.js` to run sherpa-onnx directly on ARM SBC NPUs.
+
+## Linguistic Processing Data Boundary (#122)
+To prevent regressions and audit false positives regarding Cyrillic characters in the source tree, the linguistic boundary is formally defined:
+
+1. **Strictly Allowed Cyrillic Language Processing Data (Functional Allowlist)**:
+   - `lib/normalize.js`: `NUM_WORDS` (spoken Russian numeral conversion table) and Cyrillic regex range for sentence capitalization.
+   - `lib/transcribe-core.js`: spoken voice command regex triggers (`отправь`, `отмени`, `стоп`, `продолжи`).
+   - `lib/polish.js`: LLM prompt few-shot filler word examples (`"ээ"`, `"ну"`, `"как бы"`).
+   - `lib/client-src/30-core.js`: technical stop words list for keyword extraction and voice command aliases.
+   - `lib/client-src/40-recording.js`: spoken action macro replacements (`отправь`, `с новой строки`, `абзац`).
+   These entries are essential algorithmic data for natural language transcription and speech processing; cutting them breaks Russian STT functionality.
+
+2. **Strictly Prohibited**:
+   - Cyrillic comments anywhere in `lib/*.js` or `lib/client-src/*.js`. All developer comments and docstrings MUST remain in English.
+   - Hardcoded Russian user interface labels, status text, button tooltips, or form titles. All user-facing UI copy is authored in English (`en`) and Chinese (`zh`) in `10-locale.js`, while Russian UI translation is supplied exclusively via `dsh-russian-lang`.
+
+3. **Continuous Automated Verification**:
+   - `test/linguistic-data.test.mjs` scans all source modules, asserting zero Cyrillic characters in comments, verifying that Cyrillic literals are restricted strictly to the functional allowlist, and ensuring client locale dictionaries contain zero unexpected Cyrillic strings.
+

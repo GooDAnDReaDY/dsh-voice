@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.24
+
+### Fixed
+- **Post-Fifth-Read Lockfile Verification (#205)**: Added post-fifth-read attribute check (`statSync: mtimeMs, size`) and confirmatory PID observation (`readLockPid`) in `checkProfileLock` before removing stale lockfiles. If a concurrent process writes a live successor lock during or after the fifth PID read (reproducing comment #83598 `live_successor_after_final_fifth_read`), the lockfile is preserved on disk, live PID is returned, and `unlinkSync` is aborted. Unlinking now requires unanimous agreement across all five observation steps (`p1 === pid && p2 === pid && p3 === pid && finalPid === pid && postPid === pid`).
+- **Audit Probe Coverage for Fifth-Read Seams (#214)**: Added regression coverage in `test/audit-fixes.test.mjs` reproducing the exact `live_successor_after_final_fifth_read` probe from comment #83598 (242 passing tests).
+
 ## 0.9.23
 
 ### Fixed

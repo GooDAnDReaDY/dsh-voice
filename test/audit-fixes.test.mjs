@@ -1345,3 +1345,46 @@ test('Issue #205: checkProfileLock guards against same-size successor with uncha
     } catch (_) {}
   }
 })
+
+test('Issue #205: checkProfileLock guards against live successor written on fifth read observation (comment #83598)', () => {
+  const tmpDir = path.join(__dirname, '..', '.worktrees', 'test-lock-live-fifthread-' + Date.now())
+  fs.mkdirSync(tmpDir, { recursive: true })
+  const lock = path.join(tmpDir, 'package.json.lock')
+  fs.writeFileSync(lock, '99999999')
+
+  try {
+    let reads = 0
+    let stats = 0
+    const sandbox = {
+      Date, Math, resolve: path.resolve, existsSync: fs.existsSync, unlinkSync: fs.unlinkSync,
+      isProcessAlive: (p) => p === process.pid,
+      statSync: (p) => {
+        stats++
+        return fs.statSync(p)
+      },
+      readLockPid: (p) => {
+        reads++
+        const observed = Number(fs.readFileSync(p, 'utf8'))
+        if (reads === 5) {
+          fs.writeFileSync(p, String(process.pid))
+        }
+        return observed
+      },
+    }
+
+    const src = fs.readFileSync(path.join(__dirname, '..', 'lib', 'updater.js'), 'utf8')
+    const fn = src.match(/export function checkProfileLock\(profileDir\) \{[\s\S]*?\n\}/)[0].replace('export ', '')
+    vm.createContext(sandbox)
+    vm.runInContext(fn + ';globalThis.check=checkProfileLock;', sandbox)
+
+    const out = sandbox.check(tmpDir)
+    assert.equal(out.locked, true, 'must detect live successor lock written on fifth read observation')
+    assert.equal(out.pid, process.pid, 'must report live successor PID')
+    assert.equal(fs.existsSync(lock), true, 'live successor lock must not be deleted')
+  } finally {
+    try {
+      if (fs.existsSync(lock)) fs.unlinkSync(lock)
+      if (fs.existsSync(tmpDir)) fs.rmdirSync(tmpDir)
+    } catch (_) {}
+  }
+})

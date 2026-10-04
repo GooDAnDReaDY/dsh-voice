@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.26
+
+### Fixed
+- **Neutral Profile Lock Diagnostics & Error Code Preservation (#205, #216)**: Added `formatLockDiagnostic` in `lib/updater.js` providing neutral diagnostics when `package.json.lock` is present (identifying the active PID or specifying operator manual recovery requirements). Ensured filesystem access error codes (such as `EACCES` or `EIO`) are preserved and exposed in `installExact` errors and HTTP 409 API responses.
+- **Client Error Formatting & Localization (#205, #216)**: Added localized EN/ZH diagnostic messages in `10-locale.js` and `72-hooks.js` for profile locks and filesystem error codes, rebuilding `lib/client.js`.
+- **Documentation of Operator-Recovery Lock Policy (#205, #216)**: Added documentation across `README.md`, `README.ru.md`, and `README.zh.md` detailing the profile lock policy (*contenders never remove existing locks*) and manual operator recovery instructions (`rm <profile-dir>/package.json.lock`).
+- **Persisted Install Lifecycle & Fail-Closed Test Suite (#205, #216)**: Added actual sandbox execution tests in `test/updater.test.mjs` verifying fail-closed `checkProfileLock` behavior for `EACCES`/`EIO` and all 4 child lifecycle states in `installExact` (success, nonzero exit, spawn error, timeout SIGTERM->SIGKILL escalation) with foreign lock preservation (245 passing tests).
+
 ## 0.9.25
 
 ### Fixed

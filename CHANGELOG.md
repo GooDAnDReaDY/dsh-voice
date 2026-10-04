@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.27
+
+### Fixed
+- **Parameterized Lock Paths Across All Documentation (#205)**: Replaced personal user path examples in `README.md`, `README.ru.md`, and `README.zh.md` with canonical parameterized profile paths (`~/.dsh/profiles/<profile>/package.json.lock`).
+- **Complete Controlled Operator Recovery Workflow (#205)**: Fully documented the 4-step controlled operator recovery procedure: establishing an exclusive maintenance window, verifying process quiescence and non-ownership via system tooling (`ps`/`pgrep`/`lsof`/`fuser`), removing only confirmed orphan lockfiles without recursive/force flags, and resuming operations. Explicitly noted that filesystem errors (`EACCES`/`EIO`) require filesystem inspection rather than lockfile deletion.
+- **Controlled Recovery Directives in Diagnostics (#205)**: Updated `formatLockDiagnostic` and EN/ZH client localization strings to direct operators to the documented controlled recovery workflow instead of isolated deletion instructions.
+
 ## 0.9.26
 
 ### Fixed

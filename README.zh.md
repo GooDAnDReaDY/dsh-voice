@@ -138,7 +138,7 @@ v0.8.18 质量审查后的修复批次（Gitea #79–#87，PR #88）：
 
 * `POST /dsh-voice/transcribe` — 音频转写：`{ dataBase64, mimeType, mode }` → `{ ok, text, provider, tookMs }`
 * `POST /dsh-voice/polish` — 文本模型润色：`{ text }` → `{ ok, text }`
-* `GET /dsh-voice/status` — 查询后端状态、服务商健康度与 SenseVoice
+* `GET /dsh-voice/status` — 查询后端状态、服务商健康度、SenseVoice 及 effectiveSensevoiceProvider
 * `GET /dsh-voice/config` — 获取插件运行时配置快照
 * `PUT /dsh-voice/config` — 跨网络安全持久化更新插件配置
 * `GET/POST /dsh-voice/sensevoice-installer` — SenseVoice 一键模型安装状态与触发接口（受 `isTrustedCaller` 保护，绝对路径脱敏）

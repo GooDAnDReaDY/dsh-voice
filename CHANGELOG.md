@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.28
+
+### Fixed
+- **Truthful Effective Provider & RKNN Fallback (#221)**: Implemented `resolveSensevoiceProvider` in `lib/sensevoice-installer.js` ensuring hardware acceleration configurations (`rknn`/`rknpu`) are backed by compatible `.rknn` model files; automatically and safely falls back to CPU when standard ONNX models are detected. Exposed `effectiveSensevoiceProvider` in `GET /dsh-voice/status` for truthful runtime introspection.
+- **Volatile Configuration Box Unwrapping on Live Path (#227)**: Added `isVolatileRef` and `plainConfig` in `lib/index.js` to unwrap Schemastery volatile boxes (`{ get: [Function] }`) on the `live(sctx)` path prior to `BaseConfig` validation and before returning to callers, preserving reactivity while eliminating raw box leakage. Added fallback to `describeRow()?.config`.
+- **Linguistic Processing Data Boundary Formalization (#122)**: Documented functional linguistic data boundaries in `docs/design/DESIGN.md`, defining Russian tokens strictly as functional linguistic processing data (voice triggers, stop-words, numerals, punctuation). Enforced zero Cyrillic comments codebase-wide with automated regression test `test/linguistic-data.test.mjs`.
+- **Client & Autostart Test Suite Algorithm Deduplication (#214)**: Exported client production utility implementations (`waitStop`, `currentLevel`, `accentColor`, `softColor`) under `exports._test` in `lib/client-src/90-close.js` and rebuilt client bundle. Refactored `test/client-logic.test.mjs` and `test/autostart.test.mjs` to execute real production code rather than local duplicate mock algorithms.
+
 ## 0.9.27
 
 ### Fixed

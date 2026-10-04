@@ -219,7 +219,7 @@ dsh plugin --profile web add @goodandready/dsh-voice
 ### Внутренние HTTP эндпоинты
 * `POST /dsh-voice/transcribe` — `{ dataBase64, mimeType, mode }` → `{ ok, text, provider, tookMs }`
 * `POST /dsh-voice/polish` — `{ text }` → `{ ok, text }`
-* `GET /dsh-voice/status` — состояние демонов, цепочки, конфигурация SenseVoice и реалтайма.
+* `GET /dsh-voice/status` — состояние демонов, цепочки, конфигурация SenseVoice, реалтайма и effectiveSensevoiceProvider.
 * `GET/PUT /dsh-voice/config` — получение и сохранение конфигурации плагина.
 * `GET/POST /dsh-voice/sensevoice-installer` — статус и установка модели SenseVoice в 1 клик.
 * `POST /api/dsh-voice/update` — запуск обновления плагина до актуальной версии из npm (с проверкой прав и блокировки профиля).

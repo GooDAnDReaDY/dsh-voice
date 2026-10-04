@@ -219,7 +219,7 @@ Registers `transcribe_audio(file_path, language?)` in `ctx.tools`, allowing agen
 ### Internal HTTP Endpoints
 * `POST /dsh-voice/transcribe` — `{ dataBase64, mimeType, mode }` → `{ ok, text, provider, tookMs }`
 * `POST /dsh-voice/polish` — `{ text }` → `{ ok, text }`
-* `GET /dsh-voice/status` — Returns daemon status, active chains, SenseVoice.
+* `GET /dsh-voice/status` — Returns daemon status, active chains, SenseVoice and `effectiveSensevoiceProvider`.
 * `GET /dsh-voice/config` — Returns live plugin configuration snapshot.
 * `PUT /dsh-voice/config` — Updates and persists plugin configuration across network.
 * `GET/POST /dsh-voice/sensevoice-installer` — SenseVoice 1-click model installation status and trigger (protected by `isTrustedCaller`, model paths redacted).

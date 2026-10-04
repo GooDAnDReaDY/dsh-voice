@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.25
+
+### Fixed
+- **Canonical Read-Only Profile Lock Policy (#205, #216)**: Transitioned `checkProfileLock(profileDir)` to a strict read-only lock verification policy adhering to the DSH canonical rule: the contender never removes an existing lock; orphan lock recovery is strictly an operator action. Eliminated sequential PID polling and removed `unlinkSync` entirely, closing the fundamental TOCTOU vulnerability demonstrated by audit probe 83719.
+- **Fail-Closed Lock Error Handling (#205, #216)**: Any filesystem error accessing the lockfile (such as `EACCES` or `EIO`) returns `{ locked: true, pid: null, error: err.code }`, fail-closing instead of misinterpreting access errors as an unlocked profile.
+- **Child Exit Cleanup Decoupling (#205, #216)**: Removed redundant `checkProfileLock` invocation in `installExact` child process error/exit handlers, ensuring the parent does not touch foreign profile locks on process termination.
+
 ## 0.9.24
 
 ### Fixed

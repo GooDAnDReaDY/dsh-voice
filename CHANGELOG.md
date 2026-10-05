@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.29
+
+### Fixed
+- **In-Browser WASM Whisper Offline Fallback (#168)**: Implemented graceful fallback to `@huggingface/transformers` with `{ device: 'wasm', dtype: 'q8' }` in `lib/client-src/35-webgpu.js` when `navigator.gpu` is absent or WebGPU pipeline initialization fails. Exposed `isWasmSupported` and `isOfflineSupported` on `voice.webGpu`.
+- **Physical RKNN Model Existence Guard (#168)**: Enforced strict physical filesystem check (`existsSync(modelPath)`) in `resolveSensevoiceProvider` and `buildSensevoiceArgs` (`lib/sensevoice-installer.js`) before enabling `--provider=rknn`. Missing or non-existent `.rknn` files truthfully fall back to CPU (`cpu`) rather than claiming an active hardware accelerator. Documented that physical RK3588 NPU acceleration requires compatible RK3588 hardware.
+
 ## 0.9.28
 
 ### Fixed

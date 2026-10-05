@@ -1,3 +1,8 @@
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import vm from 'node:vm'
+import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { PROVIDER_KEYS, makeProviders } from '../lib/providers.js'
@@ -40,27 +45,51 @@ test('lib/transcribe-core.js keeps browser-webgpu under localOnly mode', () => {
   assert.deepEqual(order, ['browser-webgpu', 'local-whisper'], 'localOnly must keep browser-webgpu and local-whisper, dropping groq')
 })
 
-test('buildSensevoiceArgs supports Rockchip RK3588 NPU (rknn) and thread count (#221)', () => {
-  const cfg = {
-    sensevoiceModel: '/opt/models/sensevoice/model.rknn',
-    sensevoiceProvider: 'rknn',
-    sensevoiceThreads: 8,
+test('buildSensevoiceArgs supports Rockchip RK3588 NPU (rknn) and thread count (#221, #168)', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rknn-npu-'))
+  const realRknn = path.join(tmpDir, 'model.rknn')
+  fs.writeFileSync(realRknn, 'dummy')
+  try {
+    const cfg = {
+      sensevoiceModel: realRknn,
+      sensevoiceProvider: 'rknn',
+      sensevoiceThreads: 8,
+    }
+    const args = buildSensevoiceArgs(cfg, '6006')
+    assert.ok(args.includes('--provider=rknn'), 'must include sherpa official --provider=rknn')
+    assert.ok(args.includes('--num-threads=8'), 'must include --num-threads=8')
+    assert.ok(args.includes('--port=6006'), 'must include port')
+    assert.ok(args.includes('--sense-voice-model='), 'must include model path')
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true })
   }
-  const args = buildSensevoiceArgs(cfg, '6006')
-  assert.ok(args.includes('--provider=rknn'), 'must include sherpa official --provider=rknn')
-  assert.ok(args.includes('--num-threads=8'), 'must include --num-threads=8')
-  assert.ok(args.includes('--port=6006'), 'must include port')
-  assert.ok(args.includes('--sense-voice-model='), 'must include model path')
 })
 
-test('buildSensevoiceArgs normalizes legacy rknpu to rknn provider (#221)', () => {
+test('buildSensevoiceArgs normalizes legacy rknpu to rknn provider when model exists (#221, #168)', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rknn-legacy-'))
+  const realRknn = path.join(tmpDir, 'model.rknn')
+  fs.writeFileSync(realRknn, 'dummy')
+  try {
+    const cfg = {
+      sensevoiceModel: realRknn,
+      sensevoiceProvider: 'rknpu',
+      sensevoiceThreads: 4,
+    }
+    const args = buildSensevoiceArgs(cfg, '6006')
+    assert.ok(args.includes('--provider=rknn'), 'must normalize rknpu to --provider=rknn')
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true })
+  }
+})
+
+test('buildSensevoiceArgs falls back to CPU when .rknn file does not exist (#168)', () => {
   const cfg = {
-    sensevoiceModel: '/opt/models/sensevoice/model.rknn',
-    sensevoiceProvider: 'rknpu',
+    sensevoiceModel: '/nonexistent/path/model.rknn',
+    sensevoiceProvider: 'rknn',
     sensevoiceThreads: 4,
   }
   const args = buildSensevoiceArgs(cfg, '6006')
-  assert.ok(args.includes('--provider=rknn'), 'must normalize rknpu to --provider=rknn')
+  assert.ok(!args.includes('--provider=rknn'), 'missing .rknn file must not pass --provider=rknn')
 })
 
 test('buildSensevoiceArgs default cpu provider omits provider flag for standard CPU', () => {
@@ -122,4 +151,126 @@ test('runChain gracefully falls back from browser-webgpu to next host provider',
   assert.equal(attempts[0].ok, false)
   assert.equal(attempts[1].p, 'local-whisper')
   assert.equal(attempts[1].ok, true)
+})
+
+test('client-src/35-webgpu: loadWebGpuWhisper falls back to WASM when WebGPU is unavailable (#168)', async () => {
+  const clientBundlePath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'client.js')
+  const clientCode = fs.readFileSync(clientBundlePath, 'utf8')
+
+  const pipelineCalls = []
+  const mockTransformers = {
+    pipeline: async (task, model, opts) => {
+      pipelineCalls.push({ task, model, opts })
+      return async () => ({ text: 'mock offline transcript' })
+    },
+  }
+
+  let loadedModule = null
+  const sandbox = {
+    window: {
+      __ModuleLoader__: {
+        load({ factory }) {
+          loadedModule = factory(() => ({}))
+        },
+      },
+      addEventListener() {},
+      removeEventListener() {},
+      dispatchEvent() {},
+    },
+    document: {
+      querySelector: () => null,
+      querySelectorAll: () => [],
+      createElement: () => ({ dataset: {}, setAttribute() {}, appendChild() {}, classList: { add() {}, remove() {} } }),
+      head: { appendChild: () => {} },
+      body: { appendChild: () => {} },
+    },
+    navigator: {
+      // No gpu: navigator.gpu is undefined
+    },
+    WebAssembly: {},
+    __mockTransformers: mockTransformers,
+    setTimeout: globalThis.setTimeout,
+    clearTimeout: globalThis.clearTimeout,
+    console,
+  }
+  sandbox.globalThis = sandbox
+
+  vm.createContext(sandbox)
+  vm.runInContext(clientCode, sandbox)
+
+  const { isWebGpuSupported, isWasmSupported, isOfflineSupported, loadWebGpuWhisper } = loadedModule._test
+
+  assert.equal(isWebGpuSupported(), false, 'WebGPU should be unsupported without navigator.gpu')
+  assert.equal(isWasmSupported(), true, 'WASM should be supported when WebAssembly exists')
+  assert.equal(isOfflineSupported(), true, 'Offline should be supported via WASM fallback')
+
+  const transcriber = await loadWebGpuWhisper('onnx-community/whisper-tiny')
+  assert.equal(typeof transcriber, 'function')
+  assert.equal(pipelineCalls.length, 1)
+  assert.equal(pipelineCalls[0].task, 'automatic-speech-recognition')
+  assert.equal(pipelineCalls[0].model, 'onnx-community/whisper-tiny')
+  assert.equal(pipelineCalls[0].opts.device, 'wasm', 'Must fall back to wasm device')
+  assert.equal(pipelineCalls[0].opts.dtype, 'q8', 'Must use q8 dtype for wasm fallback')
+})
+
+test('client-src/35-webgpu: loadWebGpuWhisper falls back to WASM if WebGPU pipeline init throws (#168)', async () => {
+  const clientBundlePath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'client.js')
+  const clientCode = fs.readFileSync(clientBundlePath, 'utf8')
+
+  const pipelineCalls = []
+  const mockTransformers = {
+    pipeline: async (task, model, opts) => {
+      pipelineCalls.push({ task, model, opts })
+      if (opts.device === 'webgpu') {
+        throw new Error('WebGPU device initialization failed')
+      }
+      return async () => ({ text: 'wasm fallback result' })
+    },
+  }
+
+  let loadedModule = null
+  const sandbox = {
+    window: {
+      __ModuleLoader__: {
+        load({ factory }) {
+          loadedModule = factory(() => ({}))
+        },
+      },
+      addEventListener() {},
+      removeEventListener() {},
+      dispatchEvent() {},
+    },
+    document: {
+      querySelector: () => null,
+      querySelectorAll: () => [],
+      createElement: () => ({ dataset: {}, setAttribute() {}, appendChild() {}, classList: { add() {}, remove() {} } }),
+      head: { appendChild: () => {} },
+      body: { appendChild: () => {} },
+    },
+    navigator: {
+      gpu: {},
+    },
+    WebAssembly: {},
+    __mockTransformers: mockTransformers,
+    setTimeout: globalThis.setTimeout,
+    clearTimeout: globalThis.clearTimeout,
+    console,
+  }
+  sandbox.globalThis = sandbox
+
+  vm.createContext(sandbox)
+  vm.runInContext(clientCode, sandbox)
+
+  const { isWebGpuSupported, isWasmSupported, isOfflineSupported, loadWebGpuWhisper } = loadedModule._test
+
+  assert.equal(isWebGpuSupported(), true)
+  assert.equal(isWasmSupported(), true)
+  assert.equal(isOfflineSupported(), true)
+
+  const transcriber = await loadWebGpuWhisper('onnx-community/whisper-tiny-fail-gpu')
+  assert.equal(typeof transcriber, 'function')
+  assert.equal(pipelineCalls.length, 2, 'Should attempt webgpu first then wasm fallback')
+  assert.equal(pipelineCalls[0].opts.device, 'webgpu')
+  assert.equal(pipelineCalls[1].opts.device, 'wasm')
+  assert.equal(pipelineCalls[1].opts.dtype, 'q8')
 })

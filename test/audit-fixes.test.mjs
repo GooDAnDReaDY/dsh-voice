@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
+import os from 'node:os'
 import vm from 'node:vm'
 import { fileURLToPath } from 'node:url'
 import { createLocalDaemons } from '../lib/local-daemon.js'
@@ -893,7 +894,7 @@ test('Issue #191: localDaemons awaits async child.result() and extracts exitCode
   }
 })
 
-test('Issue #221: buildSensevoiceArgs guards against plain .onnx on RKNN provider and falls back to CPU', () => {
+test('Issue #221, #168: buildSensevoiceArgs guards against plain .onnx on RKNN provider and requires physical .rknn file', () => {
   // 1. Plain .onnx without .rknn file must fall back to CPU (omit --provider=rknn)
   const argsCpuFallback = buildSensevoiceArgs(
     { sensevoiceModel: 'model.int8.onnx', sensevoiceProvider: 'rknn', sensevoiceTokens: 'tokens.txt' },
@@ -901,12 +902,26 @@ test('Issue #221: buildSensevoiceArgs guards against plain .onnx on RKNN provide
   )
   assert.ok(!argsCpuFallback.includes('--provider=rknn'), 'plain onnx without rknn model must not pass --provider=rknn')
 
-  // 2. If a .rknn model is specified, RKNN provider is retained
-  const argsRknn = buildSensevoiceArgs(
-    { sensevoiceModel: 'model.rknn', sensevoiceProvider: 'rknn' },
+  // 2. Non-existent .rknn file must fall back to CPU (#168)
+  const argsMissing = buildSensevoiceArgs(
+    { sensevoiceModel: '/nonexistent/models/model.rknn', sensevoiceProvider: 'rknn' },
     '6006',
   )
-  assert.ok(argsRknn.includes('--provider=rknn'), 'rknn model must include --provider=rknn')
+  assert.ok(!argsMissing.includes('--provider=rknn'), 'non-existent rknn file must fall back to CPU')
+
+  // 3. Existing .rknn file retains RKNN provider
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rknn-test-'))
+  const realRknn = path.join(tmpDir, 'model.rknn')
+  fs.writeFileSync(realRknn, 'dummy rknn content')
+  try {
+    const argsRknn = buildSensevoiceArgs(
+      { sensevoiceModel: realRknn, sensevoiceProvider: 'rknn' },
+      '6006',
+    )
+    assert.ok(argsRknn.includes('--provider=rknn'), 'existing rknn model must include --provider=rknn')
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true })
+  }
 })
 
 test('Issue #198: multiphase dictation refreshes TokenSpan on accepted insert across phrase cuts', async () => {

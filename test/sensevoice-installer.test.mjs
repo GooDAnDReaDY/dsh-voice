@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
@@ -162,7 +162,7 @@ test('lib/index.js wires SenseVoice installer updateConfig to modern SettingsFor
 
 import { resolveSensevoiceProvider } from '../lib/sensevoice-installer.js'
 
-test('resolveSensevoiceProvider truthfully resolves effective provider and CPU fallback (#221)', () => {
+test('resolveSensevoiceProvider truthfully resolves effective provider and CPU fallback (#221, #168)', async () => {
   // 1. Default / unspecified provider resolves to cpu
   assert.equal(resolveSensevoiceProvider({}), 'cpu')
   assert.equal(resolveSensevoiceProvider({ sensevoiceProvider: 'cpu' }), 'cpu')
@@ -174,18 +174,31 @@ test('resolveSensevoiceProvider truthfully resolves effective provider and CPU f
     sensevoiceModel: '/nonexistent/path/model.int8.onnx',
   }), 'cpu')
 
-  // 3. Configured rknn with .rknn model resolves to rknn
+  // 3. Configured rknn with non-existent .rknn model falls back to cpu (#168)
   assert.equal(resolveSensevoiceProvider({
     sensevoiceProvider: 'rknn',
     sensevoiceModel: '/opt/models/model.rknn',
-  }), 'rknn')
+  }), 'cpu')
 
-  // 4. Legacy rknpu normalizes and behaves truthfully
+  // 4. Configured rknn with existing .rknn model resolves to rknn
+  const tmpDir = await mkdtemp(path.join(tmpdir(), 'rknn-resolve-'))
+  const realRknn = path.join(tmpDir, 'model.rknn')
+  await writeFile(realRknn, 'dummy rknn')
+  try {
+    assert.equal(resolveSensevoiceProvider({
+      sensevoiceProvider: 'rknn',
+      sensevoiceModel: realRknn,
+    }), 'rknn')
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true })
+  }
+
+  // 5. Legacy rknpu normalizes and behaves truthfully
   assert.equal(resolveSensevoiceProvider({
     sensevoiceProvider: 'rknpu',
     sensevoiceModel: 'model.int8.onnx',
   }), 'cpu')
 
-  // 5. Other custom providers pass through
+  // 6. Other custom providers pass through
   assert.equal(resolveSensevoiceProvider({ sensevoiceProvider: 'cuda' }), 'cuda')
 })

@@ -140,3 +140,11 @@ test('startWhisper and startSensevoice release starting flag across all exit pat
   // Check that try block begins immediately after starting latch in startSensevoice
   assert.match(daemonSource, /startingSensevoice = true\s*try \{/, 'startSensevoice must wrap all checks in try/finally')
 })
+
+test('startWhisper and startSensevoice pass positive finite timeoutMs to shell spec (GH #9, #261)', () => {
+  const daemonSource = readFileSync(new URL('../lib/local-daemon.js', import.meta.url), 'utf8')
+  // Must NOT use timeoutMs: 0
+  assert.doesNotMatch(daemonSource, /timeoutMs:\s*0\b/, 'must not pass timeoutMs: 0 which fails DSH 0.2 shell validation')
+  // Must pass positive timeoutMs (e.g. timeoutMs: 60000)
+  assert.match(daemonSource, /timeoutMs:\s*[1-9]\d*/, 'must pass positive finite timeoutMs to shell execution spec')
+})

@@ -25,14 +25,34 @@ test('isTrustedUpdateRequest rejects remote, cross-site, or untrusted requests',
     'request without x-dsh-plugin-update: 1 must be rejected'
   )
 
-  // Remote address
+  // Remote non-private address must be rejected
+  assert.equal(
+    isTrustedUpdateRequest({
+      headers: { 'x-dsh-plugin-update': '1', origin: 'http://8.8.8.8:3000', host: '8.8.8.8:3000' },
+      socket: { remoteAddress: '8.8.8.8' },
+    }),
+    false,
+    'public remote IP must be rejected'
+  )
+
+  // Private LAN with same-origin must be accepted (#258)
   assert.equal(
     isTrustedUpdateRequest({
       headers: { 'x-dsh-plugin-update': '1', origin: 'http://192.168.1.50:3000', host: '192.168.1.50:3000' },
       socket: { remoteAddress: '192.168.1.50' },
     }),
+    true,
+    'private LAN with same-origin must be accepted (#258)'
+  )
+
+  // Private LAN with mismatched origin must be rejected (#258)
+  assert.equal(
+    isTrustedUpdateRequest({
+      headers: { 'x-dsh-plugin-update': '1', origin: 'http://192.168.1.99:3000', host: '192.168.1.50:3000' },
+      socket: { remoteAddress: '192.168.1.50' },
+    }),
     false,
-    'remote IP must be rejected'
+    'private LAN with mismatched origin must be rejected'
   )
 
   // Cross-site

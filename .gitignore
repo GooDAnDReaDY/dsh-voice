@@ -30,8 +30,6 @@ Thumbs.db
 .planning/
 docs/plans/
 docs/testing/
-AGENTS.md
-index.md
 
 # Release artifacts & worktrees (issue #154)
 *.tgz

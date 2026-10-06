@@ -1375,3 +1375,32 @@ test('Issue #205: checkProfileLock passes independent audit probe #83719 counter
     } catch (_) {}
   }
 })
+test('Issue #256: repository root contains AGENTS.md, index.md, and executable deploy.sh', () => {
+  const repoDir = path.resolve(__dirname, '..')
+  assert.ok(fs.existsSync(path.join(repoDir, 'index.md')), 'index.md must exist in repo root')
+  assert.ok(fs.existsSync(path.join(repoDir, 'deploy.sh')), 'deploy.sh must exist in repo root')
+  assert.ok(fs.existsSync(path.join(repoDir, 'AGENTS.md')), 'AGENTS.md must exist in repo root')
+
+  const stat = fs.statSync(path.join(repoDir, 'deploy.sh'))
+  assert.ok((stat.mode & 0o111) !== 0, 'deploy.sh must be executable')
+})
+
+test('Issue #257: README files document browser Microphone Secure Context requirement', () => {
+  const repoDir = path.resolve(__dirname, '..')
+  const en = fs.readFileSync(path.join(repoDir, 'README.md'), 'utf8')
+  const ru = fs.readFileSync(path.join(repoDir, 'README.ru.md'), 'utf8')
+  const zh = fs.readFileSync(path.join(repoDir, 'README.zh.md'), 'utf8')
+
+  assert.ok(en.includes('Secure Context'), 'README.md must document Secure Context')
+  assert.ok(ru.includes('Secure Context'), 'README.ru.md must document Secure Context')
+  assert.ok(zh.includes('Secure Context'), 'README.zh.md must document Secure Context')
+})
+
+test('Issue #259: UpdaterCard styles errors with warning color without localized text sniffing', () => {
+  const clientFragments = path.resolve(__dirname, '..', 'lib', 'client-src')
+  const updaterCardSrc = fs.readFileSync(path.join(clientFragments, '72-updater.js'), 'utf8')
+  const hooksSrc = fs.readFileSync(path.join(clientFragments, '72-hooks.js'), 'utf8')
+
+  assert.match(hooksSrc, /updaterMsgKind/, '72-hooks.js must track updaterMsgKind state')
+  assert.match(updaterCardSrc, /updaterMsgKind === 'err'/, '72-updater.js must rely on updaterMsgKind')
+})

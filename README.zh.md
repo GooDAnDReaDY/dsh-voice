@@ -35,6 +35,9 @@
 
 ---
 
+## 运行要求
+### 浏览器麦克风与安全上下文 (Secure Context)\n现代浏览器要求在**安全上下文**（`https://` 或 `http://localhost` / `http://127.0.0.1`）下才允许调用麦克风接口（`navigator.mediaDevices.getUserMedia`）。当通过局域网以普通 HTTP 访问 DSH（如使用 `dsh-lanmode` 访问 `http://192.168.1.x:3080`）时，浏览器默认会阻止录音。在局域网环境下，请配置 HTTPS 反向代理，或在浏览器中启用标志（`chrome://flags/#unsafely-treat-insecure-origin-as-secure`）。\n
+
 ## ⚡ 插件概览
 
 **`dsh-voice`** 为 **DeepSeek Harness** Web 界面带来极速语音交互体验。无论是按自然停顿切分的流式听写，还是带撤回保护的语音消息以及键盘/鼠标 Push-to-Talk 对讲，`dsh-voice` 凭借**多服务商自动故障转移备用链**确保您的录音万无一失。

@@ -35,6 +35,9 @@
 
 ---
 
+## Requirements
+### Browser Microphone & Secure Context\nModern browsers require a **Secure Context** (`https://` or `http://localhost` / `http://127.0.0.1`) for microphone capture (`navigator.mediaDevices.getUserMedia`). When accessing DSH over a local network (e.g., `http://192.168.1.x:3080` via `dsh-lanmode`), browsers will block microphone access by default. Serve DSH behind an HTTPS reverse proxy or configure browser security flags (`chrome://flags/#unsafely-treat-insecure-origin-as-secure`) for LAN IP access.\n
+
 ## ⚡ Overview
 
 **`dsh-voice`** brings voice superpowers to the **DeepSeek Harness** Web UI. Whether you need hands-free real-time streaming dictation segmented on natural breath pauses or crisp voice notes with keyboard/mouse Push-to-Talk gestures, `dsh-voice` ensures your audio is never lost thanks to **automatic multi-provider fallback chains**.

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.9.30
+
+### Fixed
+- **DSH 0.2 Persistent Shell `timeoutMs` Validation (GH #9, #261)**: Fixed autostart failure with error `"bash-local: request.timeoutMs must be a positive finite number"` on DSH 0.2.x by setting positive finite `timeoutMs: 60000` on both Whisper and SenseVoice daemon specs in `lib/local-daemon.js`, eliminating `timeoutMs: 0` which is rejected by `@deepseek-ai/dsh-tools` shell execution schema.
+- **LAN Same-Origin Updater Trust (#258)**: Updated `isTrustedUpdateRequest` in `lib/updater.js` to accept private LAN same-origin requests (`192.168.x.x`, `10.x.x.x`, `172.16-31.x.x`) matching host header, bringing one-click updater security policy into parity with `isTrustedCaller` on `PUT /config` and other administrative endpoints.
+- **Client Updater Status Kind & Color Heuristic (#259)**: Replaced fragile substring heuristics (`updaterMsg.includes('fail') || updaterMsg.includes('失败')`) in `lib/client-src/72-updater.js` with structured status state `updaterMsgKind` (`'ok' | 'err' | 'warn'`) in `lib/client-src/72-hooks.js`, ensuring update failure messages correctly render in warning color under Russian and other non-English locales.
+- **Stray Release Artifacts Cleaned from Working Tree (#260)**: Removed stray release archive files from repository root and verified clean packaging without unversioned artifacts.
+
+### Added
+- **Repository Standard Root Files (#256)**: Added canonical `index.md`, `AGENTS.md`, and executable `deploy.sh` to repository root and tracked them in version control.
+- **Browser Secure Context Microphone Documentation (#257)**: Documented browser Secure Context (HTTPS or localhost) requirement for `navigator.mediaDevices.getUserMedia` across `README.md`, `README.ru.md`, and `README.zh.md`, explaining browser security restrictions when accessing DSH over LAN without HTTPS.
+
 ## 0.9.29
 
 ### Fixed

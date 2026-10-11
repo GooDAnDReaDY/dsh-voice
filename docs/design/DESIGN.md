@@ -126,6 +126,13 @@
   - Process lifecycle termination on respawn (#181): In lib/index.js (startWhisper, startSensevoice), added explicit termination checks (if (child && typeof child.kill === 'function') { child.kill(); child = null }) before spawning a new process via ctx.shell.start(), preventing orphaned zombie processes and port contention (EADDRINUSE).
 
 
+- 2026-10-11 — Editable preview before send, raw/polished comparison, draft preservation and conversation session pinning (#170):
+  - Rich interactive preview pill (`editablePreview`, default: `true`): Recognized text after STT appears in a confirmation preview pill with countdown ring, audio playback player, Edit, Send and Cancel actions.
+  - Non-destructive inline editing: Clicking Edit immediately freezes the countdown timer and reveals an inline input field. The user's exact edits become the submitted payload.
+  - Raw vs Polished comparison tabs: When `polishSend` is enabled, pre-fetches `/dsh-voice/polish` and provides tabs to switch between raw transcript and polished text, or edit either before submitting.
+  - Draft preservation & cancel: Preserves existing composer text (`initialDraft`). Clicking Cancel restores the original composer draft completely.
+  - Conversation pinning (`sessionId`): Binds preview state to the active conversation session. Switching conversations triggers a safety guard (`sessionMismatch`), preventing transcript leakage across chat views.
+
 - 2026-10-02 — WebGPU/WASM Whisper in browser and SBC NPU host acceleration (#168):
   - Client-side offline WebGPU Whisper (`browser-webgpu`): Added provider key `browser-webgpu` in `lib/providers.js` and `lib/client-src/35-webgpu.js`. Checks `navigator.gpu` presence and executes in-browser transcription using compact quantized Whisper models without sending audio over the network.
   - Transparent graceful fallback: When WebGPU is not supported or initialization fails, `sendAudio` automatically falls through to the host fallback chain (/dsh-voice/transcribe) without interrupting user recording.

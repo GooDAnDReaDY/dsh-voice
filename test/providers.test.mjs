@@ -519,3 +519,18 @@ test('provider-http helpers: safeJson and readErrorDetail', async () => {
   assert.equal(detailFallback, 'Service HTTP 502')
 })
 
+
+
+test('deepgram forwards vocabulary keywords in url query params (#167)', async () => {
+  let seenUrl = ''
+  const fetchImpl = async (url) => {
+    seenUrl = String(url)
+    return { ok: true, json: async () => ({ results: { channels: [{ alternatives: [{ transcript: 'ok' }] }] } }) }
+  }
+  const providers = makeProviders(depsWith(fetchImpl), {
+    bytes, mime: 'audio/webm', lang: 'en', signal: undefined, models: {}, vocabulary: ['kubernetes', 'docker'],
+  })
+  const out = await providers.deepgram()
+  assert.equal(out.ok, true)
+  assert.ok(seenUrl.includes('keywords=kubernetes%2C%20docker'), `url must contain encoded keywords, got: ${seenUrl}`)
+})

@@ -73,6 +73,9 @@ graph LR
 ---
 
 ## ✨ Key Features
+- 🎙️ **4 Dictation Post-Processing Modes (#264)**: Verbatim (0 LLM calls, raw STT), Clean text (punctuation & filler removal without fact alteration), Agent task (structured problem/goals/criteria), and Note (key thoughts & actions). Customizable prompt templates with 1-click default restore.
+- ⚡ **Dynamic Context-Aware Lexicon Boosting (#167)**: Gathers technical identifiers, code tokens, and vocabulary from composer drafts, recent chat history, and open code blocks, passing them as hints to Deepgram (`&keywords=...`), Groq, local-whisper, and SenseVoice.
+- 🎯 **Voice Action Macros (#167)**: User-defined spoken trigger phrases (e.g. "review code", "run tests") expand into structured prompt templates with `{text}` argument replacement.
 
 * 🎙️ **Streaming Dictation with VAD**: Speech is automatically sliced at natural pauses (`vadSilenceMs`, default 700ms) and typed into the composer in real time.
 * 🌊 **Voice Notes with Cancel Window**: Record your thought and have it automatically dispatched to the agent after a safety countdown (`autoSendMs`, default 4000ms).

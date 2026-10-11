@@ -15,6 +15,9 @@ const {
   currentLevel,
   accentColor,
   VoiceSection,
+  cycleDictationMode,
+  getDictationModeLabel,
+  DICTATION_MODES,
 } = client._test
 
 const { tidyPhrase, applyVoiceCommands } = voice._core
@@ -344,4 +347,40 @@ test('npm scripts provide comprehensive lint and pack-size checks (#103)', async
   assert.ok(pkg.scripts['pack:check'] && pkg.scripts['pack:check'].includes('pack-check.mjs'), 'pack:check must be configured')
   assert.ok(pkg.scripts.pretest.includes('lint.mjs'), 'pretest must run lint')
   assert.ok(pkg.scripts.pretest.includes('pack-check.mjs'), 'pretest must run pack:check')
+})
+
+
+test('extractContextKeywords extracts technical terms from session messages (#167)', () => {
+  voice.settings = { contextGlossary: true }
+  voice.input = { draft: '' }
+  voice.session = {
+    messages: [
+      { content: 'We need to migrate MongoDB and RabbitMQ to Kubernetes cluster' }
+    ]
+  }
+  const words = extractContextKeywords()
+  assert.ok(words.includes('MongoDB'), 'must include MongoDB')
+  assert.ok(words.includes('RabbitMQ'), 'must include RabbitMQ')
+  assert.ok(words.includes('Kubernetes'), 'must include Kubernetes')
+})
+
+test('cycleDictationMode cycles across all 4 canonical modes (#264)', () => {
+  assert.equal(DICTATION_MODES.join(','), 'clean,task,note,verbatim')
+  voice.selectedDictationMode = 'clean'
+  cycleDictationMode()
+  assert.equal(voice.selectedDictationMode, 'task')
+  cycleDictationMode()
+  assert.equal(voice.selectedDictationMode, 'note')
+  cycleDictationMode()
+  assert.equal(voice.selectedDictationMode, 'verbatim')
+  cycleDictationMode()
+  assert.equal(voice.selectedDictationMode, 'clean')
+})
+
+test('getDictationModeLabel returns localized label for each mode (#264)', () => {
+  const fakeT = (k) => k
+  assert.equal(getDictationModeLabel('verbatim', fakeT), 'modeVerbatim')
+  assert.equal(getDictationModeLabel('clean', fakeT), 'modeClean')
+  assert.equal(getDictationModeLabel('task', fakeT), 'modeTask')
+  assert.equal(getDictationModeLabel('note', fakeT), 'modeNote')
 })

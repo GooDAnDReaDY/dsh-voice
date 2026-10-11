@@ -10,6 +10,8 @@
   - Composer buttons (`conversation.input.right`): mic (dictation), wave (voice message), play last note.
   - Recording pill (`conversation.input.dock`): cancel, visualizer/caption, stop, pending send countdown, error.
   - Settings card (`settings.plugin.item`, key `dsh-voice`): chains, custom providers, general options, SenseVoice, provider health dashboard.
+  - Settings card (`settings.plugin.item`, key `dsh-voice`): chains, custom providers, general options, SenseVoice, provider health dashboard, dictation mode prompt templates, voice action macros.
+  - Mode selector pill: 1-click cycle button in composer buttons (`[Clean]`, `[Task]`, `[Note]`, `[Verbatim]`) and badge indicator in recording pill with pre-recording snapshot isolation.
 - DSH UI / settings / slots:
   - `conversation.input.right` (composer action buttons: mic, voice message, play note)
   - `conversation.input.dock` (recording pill with waveform visualizer)
@@ -32,6 +34,24 @@
 - Atmosphere: native DSH chrome — recording pill and settings card match core density, not a standalone brand site.
 - References: core settings cards (Console, Agent loop) for 12px radius, 14×16 header padding, 15px/600 title.
 - Do not copy foreign product branding or non-DSH layout systems.
+
+## Dictation Modes and Voice Macros (#167, #264)
+- **4 Dictation Modes**:
+  - `verbatim` (逐字直录): exact speech recognition text, strictly 0 LLM calls, preserves technical identifiers.
+  - `clean` (清爽文本): punctuation formatting and filler-word removal without altering facts.
+  - `task` (智能体任务): structured into Problem/Goal, Expected Outcome, Constraints, Acceptance Criteria.
+  - `note` (便签备忘): key points and action items extracted from dictation.
+- **Snapshot Isolation**:
+  - Mode is selected prior to recording and snapped at recording start (`target.dictationMode`).
+  - Switching mode in-flight applies to the next recording; current recording uses its snapshot.
+  - Customizable prompt templates with 1-click restore to built-in defaults.
+  - Strict `localOnly` compliance: no cloud leakage when `localOnly: true`; graceful fallback to raw text on error or timeout.
+- **Context-Aware Lexicon Boosting (#167)**:
+  - Dynamic keyword extraction from active composer draft, recent chat session messages, and open DOM code blocks.
+  - Keywords forwarded to providers (Deepgram `&keywords=...`, Groq `prompt`, local-whisper `prompt`, SenseVoice, custom OpenAI providers).
+- **Voice Action Macros (#167)**:
+  - Spoken trigger phrases (`сделай ревью`, `запусти тесты`) automatically expanded into structured prompt templates with `{text}` argument replacement.
+  - Configurable in settings with add/edit/delete operations.
 
 ## Foundations
 - Colors and roles: only DSH theme tokens (`--dsw-alias-*`). Canvas accent comes from `--dsw-alias-state-info-primary` / `--dsw-alias-label-primary`, with `voice.waveColor` as fallback.

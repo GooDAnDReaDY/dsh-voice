@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.31
+
+### Added
+- **Editable Preview Before Send (`editablePreview`) (#170)**: Interactive confirmation pill displaying recognized STT transcript before submitting to the agent, with inline editing, Raw vs Polished comparison tabs when `polishSend` is enabled, and complete draft restoration on cancel.
+- **Auto-Send Countdown Freeze (#170)**: Clicking Edit immediately stops the auto-send countdown timer, allowing deliberate text adjustments without racing the timer.
+- **Conversation Session Pinning & Guard (#170)**: Binds recognition preview state to the active conversation session ID. Switching chats pauses auto-send and triggers a `sessionMismatch` warning, eliminating transcript leakage across conversations.
+
 ## 0.9.30
 
 ### Fixed

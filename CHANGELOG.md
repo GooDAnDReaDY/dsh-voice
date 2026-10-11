@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.34
+
+### Added
+- **Per-Recognition Diagnostics & Breakdown Telemetry (#266)**: Added per-recognition latency breakdown metrics (`vadMs`, `sttMs`, `polishMs`, `totalTookMs`), audio payload byte count, recognized word count, provider attempt status, and failure error reasons in `lib/stats.js` and `lib/host-routes.js`.
+- **Anonymized Diagnostic Report Export (#266)**: Added 1-click JSON report export button in Provider Dashboard (`ProviderDashboard` in `lib/client-src/72-dashboard.js`) via dedicated endpoint `GET /dsh-voice/diagnostics/export`, redacting all raw audio streams, base64 payloads, and spoken transcript texts while preserving timing metrics, MIME types, and provider error codes.
+- **Comprehensive Audit Completion & Verification (#216)**: Finalized all architectural recommendations, security controls (IPv6 ULA, link-local, supply-chain checks), modularity caps (<600 lines per source fragment), full test coverage (281/281 PASS), and zero-Cyrillic source code integrity across the codebase.
+
 ## 0.9.33
 
 ### Added

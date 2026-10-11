@@ -83,3 +83,60 @@ test('createStatsTracker.get() returns a serializable object', () => {
   assert.deepEqual(data, {})
   assert.equal(JSON.stringify(data), '{}')
 })
+
+
+test('createStatsTracker records diagnostics and exports anonymized report (#266)', () => {
+  const tracker = createStatsTracker()
+  tracker.record('sensevoice', { ok: true, tookMs: 120 })
+  tracker.recordDiagnostic({
+    mode: 'dictation',
+    subMode: 'clean',
+    mimeType: 'audio/webm',
+    audioBytes: 15420,
+    provider: 'sensevoice',
+    success: true,
+    totalTookMs: 145,
+    vadMs: 25,
+    sttMs: 120,
+    polishMs: 0,
+    wordCount: 12,
+  })
+
+  tracker.recordDiagnostic({
+    mode: 'message',
+    subMode: 'task',
+    mimeType: 'audio/webm',
+    audioBytes: 32000,
+    provider: 'groq',
+    success: false,
+    totalTookMs: 500,
+    vadMs: 30,
+    sttMs: 0,
+    error: 'rate limit 429',
+  })
+
+  const diagnostics = tracker.getDiagnostics()
+  assert.equal(diagnostics.length, 2)
+  assert.equal(diagnostics[0].provider, 'sensevoice')
+  assert.equal(diagnostics[0].success, true)
+  assert.equal(diagnostics[0].breakdown.sttMs, 120)
+  assert.equal(diagnostics[0].wordCount, 12)
+  assert.equal(diagnostics[1].success, false)
+  assert.equal(diagnostics[1].error, 'rate limit 429')
+
+  const report = tracker.exportAnonymizedReport({ version: '0.9.34' })
+  assert.equal(report.app.version, '0.9.34')
+  assert.ok(report.exportedAt)
+  assert.ok(report.summary.sensevoice)
+  assert.equal(report.recentDiagnostics.length, 2)
+
+  // Verify anonymization: no raw text or audio base64 in report
+  const reportStr = JSON.stringify(report)
+  assert.equal(reportStr.includes('audioBase64'), false)
+  assert.equal(reportStr.includes('rawData'), false)
+  assert.equal(reportStr.includes('rawText'), false)
+
+  tracker.clear()
+  assert.equal(tracker.getDiagnostics().length, 0)
+  assert.deepEqual(tracker.get(), {})
+})

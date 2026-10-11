@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.33
+
+### Added
+- **First-Run Onboarding & Diagnostics Wizard (#265)**: Integrated interactive first-run wizard (`FirstRunWizard` in `lib/client-src/72-wizard.js`) verifying secure context / HTTPS status, browser audio API support, microphone permission state with direct access request, device selector, live visual volume level meter (RMS signal test), active STT provider & processing area indicator (browser, local server, cloud), and 3-second sample transcription round-trip test. Includes launch button in connection card and full canonical EN + ZH translation parity.
+
+### Fixed
+- **IPv6 ULA & CIDR Private LAN Protection (#269)**: Extended `isPrivateLan` in `lib/updater.js` to recognize IPv6 Unique Local Addresses (`fc00::/7` including `fd00::/8`), IPv6 Link-Local (`fe80::/10`), IPv4 Link-Local (`169.254.0.0/16`), IPv4-mapped IPv6, and CIDR subnet notation (`/prefix`), hardening update origin trust verification on local IPv6 and hybrid LAN deployments.
+
 ## 0.9.32
 
 ### Added

@@ -6,6 +6,7 @@ import { mkdtempSync, writeFileSync, rmSync, existsSync, readFileSync } from 'no
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
+  isPrivateLan,
   isTrustedUpdateRequest,
   registerPluginUpdater,
   readLockPid,
@@ -83,6 +84,61 @@ test('isTrustedUpdateRequest rejects remote, cross-site, or untrusted requests',
     true,
     'valid local request must be accepted'
   )
+})
+
+
+test('isPrivateLan detects IPv4 private, link-local, CIDR, and IPv6 ULA / link-local (#269)', () => {
+  // IPv4 Private
+  assert.equal(isPrivateLan('192.168.1.1'), true)
+  assert.equal(isPrivateLan('192.168.0.254'), true)
+  assert.equal(isPrivateLan('10.0.0.1'), true)
+  assert.equal(isPrivateLan('10.255.255.255'), true)
+  assert.equal(isPrivateLan('172.16.0.1'), true)
+  assert.equal(isPrivateLan('172.31.255.255'), true)
+  assert.equal(isPrivateLan('172.32.0.1'), false)
+  assert.equal(isPrivateLan('8.8.8.8'), false)
+  assert.equal(isPrivateLan('1.1.1.1'), false)
+
+  // IPv4 Link-Local (169.254.0.0/16)
+  assert.equal(isPrivateLan('169.254.1.1'), true)
+  assert.equal(isPrivateLan('169.254.255.254'), true)
+  assert.equal(isPrivateLan('169.253.1.1'), false)
+
+  // CIDR notation
+  assert.equal(isPrivateLan('192.168.1.0/24'), true)
+  assert.equal(isPrivateLan('10.0.0.0/8'), true)
+  assert.equal(isPrivateLan('172.16.0.0/12'), true)
+  assert.equal(isPrivateLan('8.8.8.0/24'), false)
+
+  // IPv4-mapped IPv6 (::ffff:x.x.x.x)
+  assert.equal(isPrivateLan('::ffff:192.168.1.1'), true)
+  assert.equal(isPrivateLan('::ffff:10.0.0.1'), true)
+  assert.equal(isPrivateLan('::ffff:8.8.8.8'), false)
+
+  // IPv6 ULA (fc00::/7 including fd00::/8)
+  assert.equal(isPrivateLan('fd00::1'), true)
+  assert.equal(isPrivateLan('fd12:3456:789a::1'), true)
+  assert.equal(isPrivateLan('fc00::1'), true)
+  assert.equal(isPrivateLan('fc00:abcd::1234'), true)
+  assert.equal(isPrivateLan('[fd00::1]'), true)
+  assert.equal(isPrivateLan('fd00::/8'), true)
+  assert.equal(isPrivateLan('fc00::/7'), true)
+
+  // IPv6 Link-Local (fe80::/10)
+  assert.equal(isPrivateLan('fe80::1'), true)
+  assert.equal(isPrivateLan('fe80::1234:5678:9abc:def0'), true)
+  assert.equal(isPrivateLan('febf::1'), true)
+  assert.equal(isPrivateLan('fec0::1'), false)
+
+  // Public / Non-private IPv6
+  assert.equal(isPrivateLan('2001:db8::1'), false)
+  assert.equal(isPrivateLan('2606:4700:4700::1111'), false)
+  assert.equal(isPrivateLan('::1'), false) // loopback, not LAN
+
+  // Invalid / edge inputs
+  assert.equal(isPrivateLan(null), false)
+  assert.equal(isPrivateLan(''), false)
+  assert.equal(isPrivateLan('invalid.ip'), false)
 })
 
 test('registerPluginUpdater mounts update route with method checking', async () => {

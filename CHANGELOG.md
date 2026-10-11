@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.32
+
+### Added
+- **4 Dictation Post-Processing Modes (#264)**: Developed 4 distinct post-processing modes: `verbatim` (exact STT output, strictly 0 LLM calls, preserving all code symbols), `clean` (tidy punctuation and filler-word removal without altering facts), `task` (structured into Problem/Goal, Expected Outcome, Constraints, Acceptance Criteria without inventing details), and `note` (extracting key thoughts and action points from dictation).
+- **Snapshot Isolation & Pre-Recording Mode Selector (#264)**: Added composer mode cycler pill and recording pill badges. The active mode is captured as an immutable snapshot at recording start; in-flight mode changes apply to subsequent recordings while the current recording is processed using its snapshot.
+- **Configurable Dictation Prompt Templates (#264)**: Added settings card in plugin configuration allowing custom prompt templates per mode with `{text}` variable substitution and a 1-click restore to built-in defaults.
+- **Dynamic Context-Aware Lexicon Boosting (#167)**: Enhanced `extractContextKeywords()` to inspect composer draft, recent session messages, and open DOM code blocks, forwarding technical tokens and code terms to all STT providers (Deepgram `&keywords=...`, Groq `prompt`, local-whisper `prompt`, SenseVoice, and custom OpenAI providers).
+- **Voice Action Macros (#167)**: Added voice macros system (`lib/macros.js`) expanding spoken trigger phrases (exact and prefix matches with `{text}` template interpolation) into structured prompts, complete with settings card to add, edit, and delete user macros.
+- **Strict `localOnly` Compliance & Fallback Guarantee (#264)**: Enforced strict loopback-only isolation under `localOnly` mode without cloud leakage; in the event of LLM timeout or failure, the verbatim transcription is preserved and presented with a clear fallback indicator.
+
 ## 0.9.31
 
 ### Added

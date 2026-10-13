@@ -437,3 +437,68 @@ test('timeout abort rejects hanging provider fetch', async () => {
   clearTimeout(t)
   assert.ok(Date.now() - start < 2000, 'abort should not wait for a hung network')
 })
+test('/dsh-voice/benchmark route guards against untrusted origins and GET method (#275)', async () => {
+  const { registerHostRoutes } = await import('../lib/host-routes.js')
+  let benchmarkHandler = null
+  const mockCtx = {
+    effect: (fn) => fn(),
+    webServer: {
+      register(opts) {
+        if (opts.path === '/dsh-voice/benchmark') {
+          benchmarkHandler = opts.handler
+        }
+        return () => {}
+      }
+    }
+  }
+
+  registerHostRoutes(mockCtx, {
+    live: () => ({ sensevoiceProvider: 'openvino' }),
+    daemons: {
+      whisperAlive: async () => false,
+      sensevoiceAlive: async () => false,
+      getWhisperError: () => null,
+      getSensevoiceError: () => null,
+      startWhisper: async () => {},
+      startSensevoice: async () => {},
+    },
+    statsTracker: {},
+    transcribe: async () => {},
+    polishText: async () => {},
+    sessionCommand: () => null,
+    extractVoiceActions: () => ({}),
+    applyJargonDictionary: (t) => t,
+    KNOWN_KEYS: [],
+  })
+
+  assert.ok(benchmarkHandler, 'benchmark route must be registered')
+
+  // 1. Untrusted caller -> 403
+  const untrustedReq = mockReq('POST')
+  untrustedReq.socket = { remoteAddress: '192.168.1.150' }
+  untrustedReq.headers = { host: 'evil.com' }
+  const res1 = mockRes()
+  await benchmarkHandler(untrustedReq, res1)
+  assert.equal(res1.statusCode, 403)
+
+  // 2. GET method -> 405
+  const getReq = mockReq('GET')
+  getReq.socket = { remoteAddress: '127.0.0.1' }
+  getReq.headers = { host: 'localhost:3080' }
+  const res2 = mockRes()
+  await benchmarkHandler(getReq, res2)
+  assert.equal(res2.statusCode, 405)
+
+  // 3. Trusted POST with offline server -> 200 with hardware info
+  const postReq = mockReq('POST')
+  postReq.socket = { remoteAddress: '127.0.0.1' }
+  postReq.headers = { host: 'localhost:3080', 'content-type': 'application/json' }
+  const res3 = mockRes()
+  await benchmarkHandler(postReq, res3)
+  assert.equal(res3.statusCode, 200)
+  const body = jsonBody(res3)
+  assert.equal(body.ok, true)
+  assert.equal(body.running, false)
+  assert.equal(body.provider, 'openvino')
+  assert.equal(typeof body.cpuCores, 'number')
+})

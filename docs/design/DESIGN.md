@@ -79,6 +79,13 @@
 - Don't: hardcode theme hex colors; register a full inline `ru` dictionary; put secrets in settings (credential *names* only).
 
 ## Locked Design Decisions
+- 2026-10-13 — Whisper Large-v3-Turbo local 1-click setup, CoreML/OpenVINO hardware backends, and express benchmark (#274, #275):
+  - 1-Click Whisper Large-v3-Turbo (`lib/sensevoice-installer.js`): Automated download and extraction of quantized `sherpa-onnx-whisper-turbo.tar.bz2` (`turbo-encoder.int8.onnx`, `turbo-decoder.int8.onnx`, `turbo-tokens.txt`) to `~/.dsh/models/whisper-turbo`.
+  - Automatic dual-architecture argument builder (`buildSensevoiceArgs`): Intelligently detects model format in model directory; for Whisper models dispatches `--whisper-encoder` and `--whisper-decoder`, while maintaining full backward compatibility for SenseVoice `--sense-voice-model`.
+  - Expanded hardware acceleration providers (`resolveSensevoiceProvider`): Added native support for `coreml` (Apple Silicon), `openvino` (Intel), `cuda` (NVIDIA) alongside `rknn` and standard `cpu`.
+  - Express hardware benchmark endpoint (`/dsh-voice/benchmark`): Dedicated POST route testing real-time factor (RTF) and inference latency on 1.0s synthetic 16kHz WAV sample, reporting hardware topology (CPU cores, model, platform) and qualitative performance ratings.
+
+
 - 2026-09-25 — Route security policy hardening (#117): Same-site requests are strictly rejected (isTrustedCaller), requiring exact same-origin or loopback callers.
 - 2026-09-25 — SenseVoice status route protection and path redaction (#153): `/dsh-voice/sensevoice-installer` guards both GET and POST with `isTrustedCaller`, and all returned model/token paths are redacted (no absolute system paths leaked).
 - 2026-09-25 — Audio tool path boundary and content verification (#152): `transcribe_audio` tool enforces lexical root boundary check before stat/read, validates realpath to prevent symlink traversal escapes, and verifies audio magic bytes independently of file extension.

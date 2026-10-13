@@ -365,3 +365,16 @@ Notable changes to `@goodandready/dsh-voice`.
 
 ### Added
 - This changelog.
+
+## [0.9.35] - 2026-10-13
+
+### Added
+- **1-Click Whisper Large-v3-Turbo Installer (#274)**:
+  - Automated download and extraction of quantized `sherpa-onnx-whisper-turbo.tar.bz2` models (`turbo-encoder.int8.onnx`, `turbo-decoder.int8.onnx`, `turbo-tokens.txt`) to `~/.dsh/models/whisper-turbo`.
+  - Intelligent dual-architecture argument builder in `buildSensevoiceArgs`: dynamically detects Whisper vs SenseVoice models and passes appropriate flags (`--whisper-encoder` / `--whisper-decoder` vs `--sense-voice-model`).
+  - Model preset switcher in settings card UI (`SenseVoice-Small` vs `Whisper Large-v3-Turbo`).
+- **Hardware Acceleration Backends & Express Benchmark (#275)**:
+  - Added native support for `coreml` (Apple Silicon), `openvino` (Intel), and `cuda` (NVIDIA) execution providers in `resolveSensevoiceProvider` and settings select dropdown.
+  - Dedicated express hardware benchmark endpoint `POST /dsh-voice/benchmark` testing Real-Time Factor (RTF) and inference latency on a 1.0s synthetic 16kHz WAV sample.
+  - Instant hardware benchmark trigger button and metrics card in settings UI showing RTF, latency (ms), hardware platform and CPU cores.
+

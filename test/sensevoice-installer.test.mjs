@@ -6,14 +6,20 @@ import path from 'node:path'
 import {
   SENSEVOICE_MODEL_URL,
   SENSEVOICE_MODEL_MIRROR,
+  WHISPER_TURBO_MODEL_URL,
+  WHISPER_TURBO_MODEL_MIRROR,
   getDefaultModelDir,
   findModelFile,
   findTokensFile,
+  findWhisperFiles,
   getSensevoiceStatus,
   registerSensevoiceInstaller,
   downloadArchive,
-  redactModelPath
+  redactModelPath,
+  buildSensevoiceArgs,
+  resolveSensevoiceProvider
 } from '../lib/sensevoice-installer.js'
+import { createSyntheticWav } from '../lib/wav.js'
 import { mockReq, mockRes, jsonBody } from './helpers/mock-http.mjs'
 
 test('SENSEVOICE URLs are valid https links', () => {
@@ -160,7 +166,6 @@ test('lib/index.js wires SenseVoice installer updateConfig to modern SettingsFor
   assert.match(indexSource, /updateConfig: async \(patch\) => \{[\s\S]*?settingsService/, 'installer updateConfig must wire to settingsService')
 })
 
-import { resolveSensevoiceProvider } from '../lib/sensevoice-installer.js'
 
 test('resolveSensevoiceProvider truthfully resolves effective provider and CPU fallback (#221, #168)', async () => {
   // 1. Default / unspecified provider resolves to cpu
@@ -201,4 +206,73 @@ test('resolveSensevoiceProvider truthfully resolves effective provider and CPU f
 
   // 6. Other custom providers pass through
   assert.equal(resolveSensevoiceProvider({ sensevoiceProvider: 'cuda' }), 'cuda')
+})
+
+test('WHISPER_TURBO URLs and default directories are valid (#274)', () => {
+  assert.ok(WHISPER_TURBO_MODEL_URL.startsWith('https://'))
+  assert.ok(WHISPER_TURBO_MODEL_MIRROR.startsWith('https://'))
+  assert.ok(WHISPER_TURBO_MODEL_URL.includes('whisper-turbo'))
+  const dir = getDefaultModelDir('whisper-turbo')
+  assert.ok(dir.includes('whisper-turbo'))
+})
+
+test('findWhisperFiles detects encoder, decoder and tokens (#274)', async () => {
+  const tmpDir = await mkdtemp(path.join(tmpdir(), 'whisper-test-'))
+  try {
+    assert.equal(findWhisperFiles(tmpDir), null)
+    await writeFile(path.join(tmpDir, 'turbo-encoder.int8.onnx'), 'enc')
+    await writeFile(path.join(tmpDir, 'turbo-decoder.int8.onnx'), 'dec')
+    await writeFile(path.join(tmpDir, 'turbo-tokens.txt'), 'tok')
+
+    const found = findWhisperFiles(tmpDir)
+    assert.ok(found)
+    assert.ok(found.encoder.endsWith('turbo-encoder.int8.onnx'))
+    assert.ok(found.decoder.endsWith('turbo-decoder.int8.onnx'))
+    assert.ok(found.tokens.endsWith('turbo-tokens.txt'))
+
+    // findModelFile fallback
+    assert.equal(findModelFile(tmpDir), found.encoder)
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true })
+  }
+})
+
+test('buildSensevoiceArgs generates --whisper flags for whisper-turbo models (#274)', async () => {
+  const tmpDir = await mkdtemp(path.join(tmpdir(), 'whisper-args-'))
+  try {
+    const enc = path.join(tmpDir, 'turbo-encoder.int8.onnx')
+    const dec = path.join(tmpDir, 'turbo-decoder.int8.onnx')
+    const tok = path.join(tmpDir, 'turbo-tokens.txt')
+    await writeFile(enc, 'enc')
+    await writeFile(dec, 'dec')
+    await writeFile(tok, 'tok')
+
+    const args = buildSensevoiceArgs({ sensevoiceModel: enc, sensevoiceProvider: 'openvino', sensevoiceThreads: 8 }, 6006)
+    assert.ok(args.includes('--whisper-encoder='))
+    assert.ok(args.includes('--whisper-decoder='))
+    assert.ok(args.includes('--tokens='))
+    assert.ok(args.includes('--port=6006'))
+    assert.ok(args.includes('--num-threads=8'))
+    assert.ok(args.includes('--provider=openvino'))
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true })
+  }
+})
+
+test('resolveSensevoiceProvider supports coreml, openvino, cuda and cpu (#275)', () => {
+  assert.equal(resolveSensevoiceProvider({ sensevoiceProvider: 'coreml' }), 'coreml')
+  assert.equal(resolveSensevoiceProvider({ sensevoiceProvider: 'openvino' }), 'openvino')
+  assert.equal(resolveSensevoiceProvider({ sensevoiceProvider: 'cuda' }), 'cuda')
+  assert.equal(resolveSensevoiceProvider({ sensevoiceProvider: 'cpu' }), 'cpu')
+})
+
+test('createSyntheticWav generates valid 16kHz mono WAV buffer (#275)', () => {
+  const buf = createSyntheticWav(1.0, 16000)
+  assert.ok(Buffer.isBuffer(buf))
+  assert.equal(buf.length, 44 + 32000) // 44 byte header + 16000 * 2 bytes PCM
+  assert.equal(buf.subarray(0, 4).toString(), 'RIFF')
+  assert.equal(buf.subarray(8, 12).toString(), 'WAVE')
+  assert.equal(buf.readUInt16LE(20), 1) // PCM format
+  assert.equal(buf.readUInt16LE(22), 1) // mono channel
+  assert.equal(buf.readUInt32LE(24), 16000) // sample rate
 })

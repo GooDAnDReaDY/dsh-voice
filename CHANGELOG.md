@@ -366,6 +366,21 @@ Notable changes to `@goodandready/dsh-voice`.
 ### Added
 - This changelog.
 
+
+## [0.9.36] - 2026-10-14
+
+### Security & Hardening (#277)
+- **LAN Access Protection & Session Tokens**:
+  - Mutating and quota-consuming endpoints (`/transcribe`, `/polish`) require a cryptographically secure session auth token (`x-dsh-voice-token`) for non-loopback LAN callers, preventing unauthorized STT/LLM quota burn.
+  - Model installer (`/dsh-voice/sensevoice-installer`) and express hardware benchmark (`/dsh-voice/benchmark`) strictly enforced to `loopbackOnly: true`.
+- **Model Checksum Pinning & Secure Extraction**:
+  - Pinned SHA-256 digests verified for SenseVoice and Whisper Large-v3-Turbo model archives before extraction. Mismatched downloads are immediately rejected and purged.
+  - Added `--no-same-owner` flag to tar extraction to prevent permission/symlink exploitation.
+- **Daemon Command Sanitization**:
+  - Strictly sanitized language and parameter arguments in `lib/local-daemon.js` to eliminate shell argument injection vectors.
+- **Dead Code Cleanup**:
+  - Removed duplicate listener blocks and legacy settings registration attempts in `lib/index.js`.
+
 ## [0.9.35] - 2026-10-13
 
 ### Added

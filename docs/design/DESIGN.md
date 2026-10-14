@@ -79,6 +79,13 @@
 - Don't: hardcode theme hex colors; register a full inline `ru` dictionary; put secrets in settings (credential *names* only).
 
 ## Locked Design Decisions
+- 2026-10-14 — Security hardening for LAN callers, model SHA-256 validation, and dead code cleanup (#277):
+  - LAN caller security and session token authentication (`lib/http-util.js`): Mutating and quota-burning endpoints (`/transcribe`, `/polish`) require a cryptographically random session token (`x-dsh-voice-token`) for non-loopback LAN callers, stopping unauthenticated LAN STT/LLM burning. Host model installer (`/dsh-voice/sensevoice-installer`) and benchmark (`/dsh-voice/benchmark`) strictly enforce `loopbackOnly: true`.
+  - Pinned SHA-256 archive validation (`lib/sensevoice-installer.js`): Model archives (`sensevoice.tar.bz2`, `whisper-turbo.tar.bz2`) must strictly match pinned SHA-256 digests before extraction. Extraction runs with `--no-same-owner` to prevent symlink/ownership exploits.
+  - Dead code cleanup (`lib/index.js`): Removed duplicated event handlers without disposers and added safety check before `sctx.settings.register`.
+  - Daemon argument sanitization (`lib/local-daemon.js`): Language parameters sanitized against shell metacharacters with strict alphanumeric validation.
+
+
 - 2026-10-13 — Whisper Large-v3-Turbo local 1-click setup, CoreML/OpenVINO hardware backends, and express benchmark (#274, #275):
   - 1-Click Whisper Large-v3-Turbo (`lib/sensevoice-installer.js`): Automated download and extraction of quantized `sherpa-onnx-whisper-turbo.tar.bz2` (`turbo-encoder.int8.onnx`, `turbo-decoder.int8.onnx`, `turbo-tokens.txt`) to `~/.dsh/models/whisper-turbo`.
   - Automatic dual-architecture argument builder (`buildSensevoiceArgs`): Intelligently detects model format in model directory; for Whisper models dispatches `--whisper-encoder` and `--whisper-decoder`, while maintaining full backward compatibility for SenseVoice `--sense-voice-model`.

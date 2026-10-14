@@ -4,6 +4,8 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
+  MODEL_SHA256,
+  verifyArchiveSha256,
   SENSEVOICE_MODEL_URL,
   SENSEVOICE_MODEL_MIRROR,
   WHISPER_TURBO_MODEL_URL,
@@ -275,4 +277,32 @@ test('createSyntheticWav generates valid 16kHz mono WAV buffer (#275)', () => {
   assert.equal(buf.readUInt16LE(20), 1) // PCM format
   assert.equal(buf.readUInt16LE(22), 1) // mono channel
   assert.equal(buf.readUInt32LE(24), 16000) // sample rate
+})
+
+test('MODEL_SHA256 defines pinned sha256 checksums for sensevoice and whisper-turbo (#277)', () => {
+  assert.ok(MODEL_SHA256.sensevoice)
+  assert.ok(MODEL_SHA256['whisper-turbo'])
+  assert.equal(MODEL_SHA256.sensevoice.length, 64)
+  assert.equal(MODEL_SHA256['whisper-turbo'].length, 64)
+})
+
+test('verifyArchiveSha256 validates matching sha256 and rejects mismatched digests (#277)', async () => {
+  const tmpDir = await mkdtemp(path.join(tmpdir(), 'sha-test-'))
+  try {
+    const file = path.join(tmpDir, 'model.tar.bz2')
+    await writeFile(file, 'sample model content')
+    const { createHash } = await import('node:crypto')
+    const actualHash = createHash('sha256').update('sample model content').digest('hex')
+
+    // Valid hash passes
+    assert.equal(await verifyArchiveSha256(file, actualHash), true)
+
+    // Mismatched hash rejects with clear message
+    await assert.rejects(
+      () => verifyArchiveSha256(file, '0000000000000000000000000000000000000000000000000000000000000000'),
+      /SHA-256 verification failed/
+    )
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true })
+  }
 })

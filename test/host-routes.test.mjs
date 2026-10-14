@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readBody, writeJson, isLoopback, isTrustedCaller } from '../lib/http-util.js'
+import { readBody, writeJson, isLoopback, isTrustedCaller, getVoiceSessionToken, verifyVoiceSessionToken } from '../lib/http-util.js'
 import { createPolishText } from '../lib/polish.js'
 import { buildProviderOrder, sessionCommand } from '../lib/transcribe-core.js'
 import { mockReq, mockRes, jsonBody } from './helpers/mock-http.mjs'
@@ -501,4 +501,42 @@ test('/dsh-voice/benchmark route guards against untrusted origins and GET method
   assert.equal(body.running, false)
   assert.equal(body.provider, 'openvino')
   assert.equal(typeof body.cpuCores, 'number')
+})
+
+test('isTrustedCaller rejects LAN POST callers without session token and accepts with token (#277)', () => {
+  const token = getVoiceSessionToken()
+  assert.ok(token)
+  assert.ok(verifyVoiceSessionToken(token))
+
+  // 1. LAN POST without token -> rejected
+  const lanPostNoToken = {
+    method: 'POST',
+    socket: { remoteAddress: '192.168.1.150' },
+    headers: { 'content-type': 'application/json', host: 'example.com:3080', origin: 'http://example.com:3080' },
+  }
+  assert.equal(isTrustedCaller(lanPostNoToken), false)
+
+  // 2. LAN POST with valid token -> accepted
+  const lanPostWithToken = {
+    method: 'POST',
+    socket: { remoteAddress: '192.168.1.150' },
+    headers: {
+      'content-type': 'application/json',
+      host: 'example.com:3080',
+      origin: 'http://example.com:3080',
+      'x-dsh-voice-token': token,
+    },
+  }
+  assert.equal(isTrustedCaller(lanPostWithToken), true)
+
+  // 3. Route marked loopbackOnly rejects LAN even with valid token
+  assert.equal(isTrustedCaller(lanPostWithToken, { loopbackOnly: true }), false)
+
+  // 4. Loopback with loopbackOnly -> accepted
+  const loopbackReq = {
+    method: 'POST',
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: { 'content-type': 'application/json', host: 'localhost:3080' },
+  }
+  assert.equal(isTrustedCaller(loopbackReq, { loopbackOnly: true }), true)
 })

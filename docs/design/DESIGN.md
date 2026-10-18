@@ -173,6 +173,11 @@
   - Local engine compatibility: `buildProviderOrder` in `lib/transcribe-core.js` includes `browser-webgpu` in `localEngines`, allowing fully offline operation under `localOnly: true`.
   - SBC NPU & multi-thread acceleration: Added `sensevoiceProvider` (options: `cpu`, `rknpu` for Rockchip RK3588 NPU, `openvino`, `cuda`) and `sensevoiceThreads` in `lib/schema.js` and `buildSensevoiceArgs` in `lib/sensevoice-installer.js` to run sherpa-onnx directly on ARM SBC NPUs.
 
+- 2026-10-18 — Bilingual developer context prompt (#280) and 1-click noise calibration (#281):
+  - Bilingual developer context prompt (#280): Added `bilingualDeveloperPrompt` setting and `buildTranscriptionPrompt()` helper in `lib/transcribe-core.js`. Injects bilingual technical terms (git, docker, npm, pnpm, PR, API, JSON, async/await) into STT prompts (Groq, OpenAI, local-whisper, SenseVoice, Deepgram keywords) to prevent phonetic transliteration of CLI commands and code identifiers.
+  - Microphone noise floor auto-calibration (#281): Integrated 2-second ambient noise calibration tool (`calibrateNoise` in `lib/client-src/72-hooks.js` and `72-hardware.js`) measuring room background noise via Web Audio `AnalyserNode` and automatically calculating optimal `noiseGateDb` (RMS ambient + 5 dB clamped to [-55, -25] dB).
+
+
 ## Linguistic Processing Data Boundary (#122)
 To prevent regressions and audit false positives regarding Cyrillic characters in the source tree, the linguistic boundary is formally defined:
 

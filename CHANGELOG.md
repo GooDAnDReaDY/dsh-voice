@@ -367,6 +367,19 @@ Notable changes to `@goodandready/dsh-voice`.
 - This changelog.
 
 
+## [0.9.37] - 2026-10-18
+
+### Added
+- **Bilingual Developer Context Prompt (#280)**:
+  - Added `bilingualDeveloperPrompt` and `bilingualCustomPrompt` in `lib/schema.js` and `buildTranscriptionPrompt()` in `lib/transcribe-core.js`.
+  - Injects bilingual developer primer (git, docker, npm, pnpm, PR, API, JSON, async/await) into STT prompts (Groq, OpenAI, local-whisper, SenseVoice, Deepgram keywords) for Russian and mixed-language dictation.
+  - Eliminates Cyrillic transliteration of English CLI commands, package names, and technical terms.
+  - Settings UI toggle in hardware options card with customizable prompt support.
+- **1-Click Microphone Noise Floor Auto-Calibration (#281)**:
+  - Added 2-second ambient noise calibration tool (`calibrateNoise` in `lib/client-src/72-hooks.js` and `72-hardware.js`).
+  - Measures room background noise level using Web Audio API `AnalyserNode` and automatically calculates optimal `noiseGateDb` threshold (RMS ambient + 5 dB, clamped to [-55 dB, -25 dB]).
+  - Provides visual progress feedback, success badge, and automatic settings persistence.
+
 ## [0.9.36] - 2026-10-14
 
 ### Security & Hardening (#277)

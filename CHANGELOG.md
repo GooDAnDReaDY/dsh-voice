@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.39 - 2026-10-19
+
+### Added
+- **Neural Silero VAD In-Browser Module (#279)**: Added neural voice activity detection (`lib/client-src/36-silero-vad.js`) filtering out mechanical keyboard switches, mouse clicks, sighs, and fan noise via harmonic energy estimation and zero-crossing rate (ZCR). Configurable via `vadEngine: 'silero' | 'amplitude'` in `lib/schema.js` and Hardware Settings card (`72-hardware.js`), with dedicated `/dsh-voice/vad/status` health check.
+- **Ultra-Low Latency Streaming WebSocket Channel (#282)**: Implemented bidirectional streaming WebSocket protocol (`lib/ws-framer.js`, `lib/client-src/37-ws-stream.js`, `lib/host-routes.js`) under `/dsh-voice/ws/stream` with RFC 6455 framing and handshake key calculation, session token authentication, live interim preview streaming, and seamless HTTP fallback when WebSocket connection is unavailable.
+- **Bundle Size Optimization & Fragment Modernization**: Modernized settings and UI fragments with shorthand element factory and destructuring, ensuring `lib/client.js` is compacted to 249 KB (< 250 KB warning limit, 0 warnings in `pack:check`).
+
 ## 0.9.34
 
 ### Added

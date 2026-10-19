@@ -367,6 +367,23 @@ Notable changes to `@goodandready/dsh-voice`.
 - This changelog.
 
 
+## [0.9.38] - 2026-10-19
+
+### Added
+- **Visual Microphone Clipping & Low Volume Indicator (#283)**:
+  - Real-time time-domain analysis in `currentLevel(rec)` using `AnalyserNode.getByteTimeDomainData` detecting digital clipping (samples reaching <= 1 or >= 254 on 8-bit scale).
+  - Weak signal detection when speech was present (`hadSpeech`) but RMS amplitude is below 0.08 (< -38 dBFS).
+  - Smooth 800ms decay smoothing to prevent rapid UI flickering.
+  - Dynamic visualizer wave/orb tinting using DSH CSS variable tokens (`var(--dsw-alias-state-warning-primary)` for clipping and `var(--dsw-alias-label-secondary)` for weak signal).
+  - Status indicator badges in recording pill with tooltips: `Clipping` / `Low signal`.
+  - Diagnostic metrics tracking in `statsTracker.recordDiagnostic` and `/dsh-voice/transcribe` (`clipping`, `lowVolume`).
+- **Undo Last Chunk via Voice Command & Shift+Tab (#285)**:
+  - Spoken undo triggers in Russian, English, and Chinese: `отмени последнее`, `сотри последнее`, `удали последнее`, `откати последнее`, `undo`, `undo last`, `undo chunk`, `撤销`, `撤销上一句` in `extractVoiceActions` (`lib/normalize.js`) and `SESSION_COMMANDS` (`lib/transcribe-core.js`).
+  - Supports both standalone voice command and trailing trigger syntax without inserting aborted speech.
+  - Global hotkey `Shift+Tab` during active dictation / recording immediately rolls back the last inserted text chunk and focuses the composer.
+  - Interactive undo button next to Stop in dictation recording pill when history is available.
+  - Rich feedback badge in composer pill displaying the rolled-back chunk text: `Insert undone: "[chunk]"`.
+
 ## [0.9.37] - 2026-10-18
 
 ### Added

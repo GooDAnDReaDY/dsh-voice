@@ -173,6 +173,9 @@
   - Local engine compatibility: `buildProviderOrder` in `lib/transcribe-core.js` includes `browser-webgpu` in `localEngines`, allowing fully offline operation under `localOnly: true`.
   - SBC NPU & multi-thread acceleration: Added `sensevoiceProvider` (options: `cpu`, `rknpu` for Rockchip RK3588 NPU, `openvino`, `cuda`) and `sensevoiceThreads` in `lib/schema.js` and `buildSensevoiceArgs` in `lib/sensevoice-installer.js` to run sherpa-onnx directly on ARM SBC NPUs.
 
+- 2026-10-20 — Credentials unwrapping fix for STT providers (#10, #288):
+  - Fixed `resolveKey` in `lib/index.js` to accept string reference keys and extract `resolved.value` from credential service responses `{ value, source }`. Fixed `no <ENV>` authentication failures across all keyEnv providers (`deepgram`, `groq`, `hf`, `customProviders`, `polish`).
+
 - 2026-10-19 — Neural Silero VAD (WASM/ONNX) (#279) and streaming WebSocket channel (#282):
   - Neural Silero VAD (#279): Added neural voice activity detection (`lib/client-src/36-silero-vad.js`) filtering mechanical keyboard switch clicks, sighs, and cooling fan acoustic noise using vocal cord harmonic energy evaluation and zero-crossing rate (ZCR). Configured via `vadEngine: 'silero' | 'amplitude'` in `lib/schema.js` and Hardware Settings card (`72-hardware.js`), with host status route `/dsh-voice/vad/status`.
   - Ultra-low latency streaming WebSocket ASR (#282): Added bidirectional RFC 6455 WebSocket streaming module (`lib/ws-framer.js`, `lib/client-src/37-ws-stream.js`, `lib/host-routes.js`) under `/dsh-voice/ws/stream` with origin and session token verification, streaming interim transcription previews to the composer, and automatic seamless fallback to chunked HTTP.

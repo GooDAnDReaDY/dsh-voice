@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.40 - 2026-10-20
+
+### Fixed
+- **Credentials String Ref Unwrapping (#10, #288)**: Fixed `resolveKey` in `lib/index.js` where checking `ref.type` on a primitive string reference caused immediate short-circuiting, and resolved credential objects `{ value, source }` from `ctx.credentials.resolve()` were returned directly instead of extracting `.value`. Resolves all cloud STT providers failing with `no <ENV>` error. Thanks to `@masteor` for reporting and initial PR (GitHub #10).
+
 ## 0.9.39 - 2026-10-19
 
 ### Added

@@ -173,6 +173,9 @@
   - Local engine compatibility: `buildProviderOrder` in `lib/transcribe-core.js` includes `browser-webgpu` in `localEngines`, allowing fully offline operation under `localOnly: true`.
   - SBC NPU & multi-thread acceleration: Added `sensevoiceProvider` (options: `cpu`, `rknpu` for Rockchip RK3588 NPU, `openvino`, `cuda`) and `sensevoiceThreads` in `lib/schema.js` and `buildSensevoiceArgs` in `lib/sensevoice-installer.js` to run sherpa-onnx directly on ARM SBC NPUs.
 
+- 2026-10-21 — Fix editable preview pill icon reference error (#11, #290):
+  - Defined `editIcon` and `sendIcon` in `lib/client-src/30-core.js`. Eliminates `ReferenceError: editIcon is not defined` crash in `renderEditablePreviewPill` when finalizing voice messages with `message.editablePreview: true`.
+
 - 2026-10-20 — Credentials unwrapping fix for STT providers (#10, #288):
   - Fixed `resolveKey` in `lib/index.js` to accept string reference keys and extract `resolved.value` from credential service responses `{ value, source }`. Fixed `no <ENV>` authentication failures across all keyEnv providers (`deepgram`, `groq`, `hf`, `customProviders`, `polish`).
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.41 - 2026-10-21
+
+### Fixed
+- **Preview Pill Missing Icons (#11, #290)**: Defined `editIcon` and `sendIcon` SVG builders in `lib/client-src/30-core.js`. Resolves `ReferenceError: editIcon is not defined` when rendering editable preview pill (`renderEditablePreviewPill`) after recording a voice message (🌊), preventing the dock slot from crashing and vanishing. Thanks to `@Lordos-dot` for reporting (GitHub #11).
+
 ## 0.9.40 - 2026-10-20
 
 ### Fixed

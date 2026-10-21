@@ -197,3 +197,43 @@ test('Issue #170: keepPending applies active text to composer draft without send
   assert.equal(voice.phase, 'idle')
   assert.equal(voice.pending, null)
 })
+
+test('Issue #11, #290: renderEditablePreviewPill renders editIcon and sendIcon without ReferenceError', () => {
+  const { loadedModule } = loadClientInVm()
+  const { voice, initPendingPreview, renderEditablePreviewPill, editIcon, sendIcon } = loadedModule._test
+
+  assert.equal(typeof editIcon, 'function', 'editIcon must be defined')
+  assert.equal(typeof sendIcon, 'function', 'sendIcon must be defined')
+
+  const editEl = editIcon()
+  assert.equal(editEl.type, 'svg')
+  const sendEl = sendIcon()
+  assert.equal(sendEl.type, 'svg')
+
+  const target = {
+    initialDraft: '',
+    sessionId: 'sess-1',
+    actions: { setDraft: () => {}, submit: () => {} },
+  }
+  const pending = initPendingPreview('Recorded voice message', target, {
+    autoSendMs: 4000,
+    audioUrl: 'blob:audio-note',
+  })
+  voice.pending = pending
+  voice.settings = { autoSendMs: 4000, autoSendVisualRing: true }
+
+  let isPlaying = false
+  const setIsPlaying = (val) => { isPlaying = val }
+  const audioRef = { current: { play: async () => {}, pause: () => {}, paused: true } }
+  const stateView = { phase: 'pending', settings: voice.settings }
+
+  // Must render without crashing on editIcon() or sendIcon()
+  const pillTree = renderEditablePreviewPill(voice, stateView, isPlaying, setIsPlaying, audioRef)
+  assert.ok(pillTree, 'Pill element tree must be returned')
+  assert.equal(pillTree.type, 'div')
+
+  // Also test when user switches to editing mode
+  pending.isEditing = true
+  const editingTree = renderEditablePreviewPill(voice, stateView, isPlaying, setIsPlaying, audioRef)
+  assert.ok(editingTree, 'Editing pill tree must be returned')
+})

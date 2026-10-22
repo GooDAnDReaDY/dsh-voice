@@ -14,6 +14,7 @@ export function mockReq(method, body, headers = {}) {
     headers: {
       ...(body != null ? { 'content-type': 'application/json' } : {}),
       'host': '127.0.0.1:3000',
+      'origin': 'http://127.0.0.1:3000',
       ...headers,
     },
     socket: { remoteAddress: '127.0.0.1', destroyed: false },

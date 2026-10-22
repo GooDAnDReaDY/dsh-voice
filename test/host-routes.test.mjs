@@ -176,7 +176,12 @@ test('isTrustedCaller permits loopback and validated same-origin callers, reject
     socket: { remoteAddress: '127.0.0.1' },
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-  }), true, 'POST with application/json on loopback is allowed')
+  }), false, 'POST without origin or token on loopback must be rejected (#292)')
+  assert.equal(isTrustedCaller({
+    socket: { remoteAddress: '127.0.0.1' },
+    method: 'POST',
+    headers: { 'content-type': 'application/json', origin: 'http://localhost:3080', host: 'localhost:3080' },
+  }), true, 'POST with application/json and same-origin on loopback is allowed')
 
   // 10. Null/undefined req -> false
   assert.equal(isTrustedCaller(null), false)
@@ -536,7 +541,7 @@ test('isTrustedCaller rejects LAN POST callers without session token and accepts
   const loopbackReq = {
     method: 'POST',
     socket: { remoteAddress: '127.0.0.1' },
-    headers: { 'content-type': 'application/json', host: 'localhost:3080' },
+    headers: { 'content-type': 'application/json', host: 'localhost:3080', origin: 'http://localhost:3080' },
   }
   assert.equal(isTrustedCaller(loopbackReq, { loopbackOnly: true }), true)
 })

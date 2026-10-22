@@ -176,6 +176,11 @@
 - 2026-10-21 — Fix editable preview pill icon reference error (#11, #290):
   - Defined `editIcon` and `sendIcon` in `lib/client-src/30-core.js`. Eliminates `ReferenceError: editIcon is not defined` crash in `renderEditablePreviewPill` when finalizing voice messages with `message.editablePreview: true`.
 
+- 2026-10-22 — Reverse bridge security enforcement (#292) and streaming quota bounding (#293):
+  - Reverse bridge and LAN origin security (#292): Enhanced `isTrustedCaller` and added `hasSameOrigin` in `lib/http-util.js`. Disallowed mutating requests (`PUT /config`, `POST /transcribe`, `POST /polish`) and WebSocket stream upgrades over loopback reverse bridges (`dsh-lanmode`) when missing valid same-origin headers matching Host or valid `x-dsh-voice-token`.
+  - Session token leakage mitigation & rotation (#292): `GET /dsh-voice/status` emits `sessionToken` only when request has verified same-origin (`hasSameOrigin(req)`). Added `rotateVoiceSessionToken()` upon `PUT /config`.
+  - Streaming dictation quota & engine bounding (#293): Bounded WebSocket `interim` transcription in `lib/host-routes.js` to process strictly the latest audio chunk (`streamChunks[streamChunks.length - 1]`) instead of cumulative history ($O(N)$ linear byte consumption). Restricted interim transcription to active local engines (`local-whisper`, `sensevoice`, `browser-webgpu`), eliminating cloud API calls (Deepgram, Groq) during interim stream ticks.
+
 - 2026-10-20 — Credentials unwrapping fix for STT providers (#10, #288):
   - Fixed `resolveKey` in `lib/index.js` to accept string reference keys and extract `resolved.value` from credential service responses `{ value, source }`. Fixed `no <ENV>` authentication failures across all keyEnv providers (`deepgram`, `groq`, `hf`, `customProviders`, `polish`).
 

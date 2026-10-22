@@ -222,15 +222,18 @@ Open **Settings → Plugins → Plugin settings → Voice** in the Web UI:
 ### Agent Tool (`transcribe_audio`)
 Registers `transcribe_audio(file_path, language?)` in `ctx.tools`, allowing agents to analyze audio files, interview recordings, and voice notes directly from disk. Path containment is strictly enforced against allowed directories (`allowedAudioDirs`, `~/.dsh`, `tmpdir`, `cwd`) with symlink traversal escape prevention and magic-byte audio format validation.
 
-### Internal HTTP Endpoints
+### Internal HTTP & WebSocket Endpoints
+* `GET /dsh-voice/ws/stream` — RFC 6455 WebSocket streaming channel for real-time dictation with interim transcription previews (`{ type: 'interim', text }`) and final transcript dispatch (`{ type: 'final', text, action, provider }`). Authenticated via `hasSameOrigin` or `x-dsh-voice-token` (#282, #292).
 * `POST /dsh-voice/transcribe` — `{ dataBase64, mimeType, mode }` → `{ ok, text, provider, tookMs }`
 * `POST /dsh-voice/polish` — `{ text }` → `{ ok, text }`
-* `GET /dsh-voice/status` — Returns daemon status, active chains, SenseVoice and `effectiveSensevoiceProvider`.
+* `GET /dsh-voice/status` — Returns daemon status, active chains, SenseVoice and `effectiveSensevoiceProvider`. Emits `sessionToken` exclusively to verified same-origin callers (#292).
 * `GET /dsh-voice/config` — Returns live plugin configuration snapshot.
-* `PUT /dsh-voice/config` — Updates and persists plugin configuration across network.
+* `PUT /dsh-voice/config` — Updates and persists plugin configuration across network with automatic session token rotation (#292).
 * `GET/POST /dsh-voice/sensevoice-installer` — SenseVoice 1-click model installation status and trigger (protected by `isTrustedCaller`, model paths redacted).
 * `POST /api/dsh-voice/update` — Triggers plugin self-update to latest compatible npm version (protected by local caller verification and profile lock check).
 * `GET /api/dsh-voice/update` — Returns update check status (current version, latest version, updateAvailable).
+
+> **Security & Quota Protections (#292, #293)**: State-changing HTTP routes and WebSocket upgrades enforce strict same-origin verification and token authentication against reverse LAN bridges (such as `dsh-lanmode`), preventing unauthorized configuration changes or quota depletion. Real-time interim WebSocket streaming processes only the latest audio chunk ($O(N)$ linear byte consumption) and restricts recognition strictly to local engines (`local-whisper`, `sensevoice`, `browser-webgpu`), ensuring zero cloud quota consumption during interim speech preview.
 
 ### 🔒 Profile Lock & Controlled Operator Recovery Policy
 When updating or installing plugins, DeepSeek Harness profiles coordinate concurrent operations using `<profile-dir>/package.json.lock` (for example, `~/.dsh/profiles/<profile>/package.json.lock`).

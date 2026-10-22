@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.42 - 2026-10-22
+
+### Security
+- **Reverse Bridge & LAN Origin Authorization Enforcement (#292)**: Enhanced `isTrustedCaller` and added `hasSameOrigin` in `lib/http-util.js`. Disallowed unauthenticated mutating requests (`PUT /config`, `POST /transcribe`, `POST /polish`) and WebSocket stream upgrades over loopback reverse bridges (such as `dsh-lanmode`) when missing valid `Origin`/`Referer` headers matching `Host`. Programmatic LAN requests must present a valid `x-dsh-voice-token`.
+- **Session Token Leak Mitigation & Auto-Rotation (#292)**: Restricted `GET /dsh-voice/status` to only emit `sessionToken` when `hasSameOrigin(req)` is verified, preventing unauthorized LAN clients from harvesting WebSocket session tokens. Added automatic session token rotation upon successful configuration persistence in `PUT /dsh-voice/config`.
+
+### Fixed
+- **Streaming Dictation Audio Quota & Engine Bounding (#293)**: Fixed `interim` WebSocket streaming in `lib/host-routes.js` to process strictly the latest audio chunk (`streamChunks[streamChunks.length - 1]`) instead of concatenating the cumulative audio history since session start ($O(N)$ linear byte consumption instead of quadratic $O(N^2)$ accumulation).
+- **Interim Local Engine Enforcement (#293)**: Restricted real-time `interim` transcription strictly to local/free zero-cost STT engines (`local-whisper`, `sensevoice`, `browser-webgpu`) with active daemon liveness verification. Disallowed calling paid cloud providers (Deepgram, Groq, OpenAI) during interim stream ticks, eliminating unintended cloud quota burn and duplicate HTTP transcription billing.
+
 ## 0.9.41 - 2026-10-21
 
 ### Fixed

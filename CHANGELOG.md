@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.44 - 2026-10-26
+
+### Fixed
+- **Dictation Chunk Separator in Composer Insertion (#13, #297)**: Fixed consecutive dictation chunks gluing together without spaces (e.g. `hello` + `world` -> `helloworld`) when using token span insertion or `actions.insertText` in DSH 0.2.1-rc.3+. `insertDraftText` in `lib/client-src/30-core.js` now contextually prepends a separator space when the preceding draft does not end with whitespace or opening brackets, and the incoming chunk does not begin with whitespace or punctuation. Thanks to `@masteor` (GitHub PR #13).
+
+### Added
+- **Configurable Low-Volume Threshold (#14, #298)**: Added `lowVolumeThreshold` option (range `0..1`, default `0.08`) to `lib/schema.js` and `GET /dsh-voice/status`. In `lib/client-src/40-recording.js`, the quiet audio level indicator checks against `voice.settings.lowVolumeThreshold` rather than a hardcoded `0.08`, allowing users with quiet headsets or built-in microphones to tune sensitivity or set `0` to disable the hint. Thanks to `@masteor` (GitHub PR #14).
+
 ## 0.9.43 - 2026-10-26
 
 ### Fixed

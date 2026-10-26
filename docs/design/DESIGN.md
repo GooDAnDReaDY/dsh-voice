@@ -79,6 +79,11 @@
 - Don't: hardcode theme hex colors; register a full inline `ru` dictionary; put secrets in settings (credential *names* only).
 
 ## Locked Design Decisions
+- 2026-10-26 — Desktop shell compatibility and loopback origin equivalence (#12, #295):
+  - Desktop custom app schemes (`lib/http-util.js`): Added `isDesktopShellRequest(req)`, `hasDshAuthCookie(req)`, and `isOriginOrRefererAllowed` supporting official DeepSeek Desktop scheme `dsh-app://app`, desktop UA (`@deepseek-ai/dsh-desktop/`), and desktop sandboxed views (`Origin: null` on loopback with session cookie).
+  - Loopback host equivalence: `localhost:port`, `127.0.0.1:port`, and `[::1]:port` are treated as equivalent same-origin callers when ports match, preventing false-positive origin rejections when frontend binds to localhost while host header reflects 127.0.0.1.
+  - Fail-closed security retention (#292): Raw LAN or reverse-bridge callers without Origin/Referer/Cookie and without token remain strictly rejected (`403 Forbidden`).
+
 - 2026-10-14 — Security hardening for LAN callers, model SHA-256 validation, and dead code cleanup (#277):
   - LAN caller security and session token authentication (`lib/http-util.js`): Mutating and quota-burning endpoints (`/transcribe`, `/polish`) require a cryptographically random session token (`x-dsh-voice-token`) for non-loopback LAN callers, stopping unauthenticated LAN STT/LLM burning. Host model installer (`/dsh-voice/sensevoice-installer`) and benchmark (`/dsh-voice/benchmark`) strictly enforce `loopbackOnly: true`.
   - Pinned SHA-256 archive validation (`lib/sensevoice-installer.js`): Model archives (`sensevoice.tar.bz2`, `whisper-turbo.tar.bz2`) must strictly match pinned SHA-256 digests before extraction. Extraction runs with `--no-same-owner` to prevent symlink/ownership exploits.

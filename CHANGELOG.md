@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.43 - 2026-10-26
+
+### Fixed
+- **Desktop Shell & Loopback Origin Compatibility (#12, #295)**: Fixed `forbidden source origin` 403 rejection in `isTrustedCaller` and `hasSameOrigin` (`lib/http-util.js`) when recording audio from DeepSeek Desktop (Electron, Tauri, `dsh-app://app`), sandboxed desktop views (`Origin: null`), or loopback hostname aliases (`localhost:3080` vs `127.0.0.1:3080`). Non-HTTP desktop app schemes and authenticated DSH sessions with `dsh-auth-` cookie are now recognized as trusted callers while preserving strict fail-closed cross-site (`Sec-Fetch-Site: cross-site`) and LAN reverse bridge protections. Thanks to `@StatedFast` for reporting (GitHub #12).
+
 ## 0.9.42 - 2026-10-22
 
 ### Security

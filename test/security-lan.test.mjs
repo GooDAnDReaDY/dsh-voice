@@ -290,3 +290,107 @@ test('Issue #292: /dsh-voice/ws/stream rejects upgrade without same-origin or va
   assert.ok(written2.includes('403 Forbidden') || written2.includes('401 Unauthorized'), 'upgrade with bad token must fail')
   assert.equal(destroyed2, true, 'socket must be destroyed')
 })
+
+
+test('Issue #12, #295: hasSameOrigin accepts DeepSeek Desktop custom app scheme and shell', () => {
+  const loopbackReq = {
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: { host: '127.0.0.1:3080', origin: 'dsh-app://app' },
+  }
+  assert.equal(hasSameOrigin(loopbackReq), true, 'dsh-app://app on loopback must be accepted')
+
+  const desktopUaReq = {
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: {
+      host: '127.0.0.1:3080',
+      'user-agent': 'Mozilla/5.0 @deepseek-ai/dsh-desktop/0.2.1-rc.2 Chrome/128.0',
+      cookie: 'dsh-auth-test=v1.token.signature',
+    },
+  }
+  assert.equal(hasSameOrigin(desktopUaReq), true, 'desktop UA with auth cookie must be accepted')
+
+  const nullOriginReq = {
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: {
+      host: '127.0.0.1:3080',
+      origin: 'null',
+      cookie: 'dsh-auth-test=v1.token.signature',
+    },
+  }
+  assert.equal(hasSameOrigin(nullOriginReq), true, 'null origin on loopback with auth cookie must be accepted')
+
+  // Non-loopback attempt to forge dsh-app scheme must be rejected
+  const lanForgedApp = {
+    socket: { remoteAddress: '192.168.1.150' },
+    headers: { host: '192.168.1.111:3080', origin: 'dsh-app://app' },
+  }
+  assert.equal(hasSameOrigin(lanForgedApp), false, 'dsh-app from non-loopback LAN must be rejected')
+
+  // null origin without auth cookie must be rejected
+  const untrustedNull = {
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: { host: '127.0.0.1:3080', origin: 'null' },
+  }
+  assert.equal(hasSameOrigin(untrustedNull), false, 'untrusted null origin without cookie must be rejected')
+})
+
+test('Issue #12, #295: hasSameOrigin accepts loopback alias equivalence on matching ports', () => {
+  // Origin localhost:3080 vs Host 127.0.0.1:3080
+  assert.equal(hasSameOrigin({
+    headers: { host: '127.0.0.1:3080', origin: 'http://localhost:3080' },
+  }), true, 'localhost:3080 and 127.0.0.1:3080 must be equivalent')
+
+  // Origin 127.0.0.1:3080 vs Host localhost:3080
+  assert.equal(hasSameOrigin({
+    headers: { host: 'localhost:3080', origin: 'http://127.0.0.1:3080' },
+  }), true, '127.0.0.1:3080 and localhost:3080 must be equivalent')
+
+  // IPv6 loopback [::1]:3080 vs 127.0.0.1:3080
+  assert.equal(hasSameOrigin({
+    headers: { host: '127.0.0.1:3080', origin: 'http://[::1]:3080' },
+  }), true, '[::1]:3080 and 127.0.0.1:3080 must be equivalent')
+
+  // Mismatched loopback port must be rejected
+  assert.equal(hasSameOrigin({
+    headers: { host: '127.0.0.1:3080', origin: 'http://localhost:8080' },
+  }), false, 'different ports must be rejected')
+})
+
+test('Issue #12, #295: isTrustedCaller accepts mutating requests from DeepSeek Desktop and loopback aliases', () => {
+  // 1. DeepSeek Desktop client recording audio
+  const desktopTranscribe = {
+    method: 'POST',
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: {
+      host: '127.0.0.1:3080',
+      origin: 'dsh-app://app',
+      'content-type': 'application/json',
+    },
+  }
+  assert.equal(isTrustedCaller(desktopTranscribe), true, 'Desktop shell POST must be accepted')
+
+  // 2. Browser on localhost:3080 recording to 127.0.0.1:3080
+  const loopbackAliasTranscribe = {
+    method: 'POST',
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: {
+      host: '127.0.0.1:3080',
+      origin: 'http://localhost:3080',
+      'content-type': 'application/json',
+    },
+  }
+  assert.equal(isTrustedCaller(loopbackAliasTranscribe), true, 'Loopback alias POST must be accepted')
+
+  // 3. Desktop shell with auth cookie and Origin: null
+  const nullOriginDesktop = {
+    method: 'POST',
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: {
+      host: '127.0.0.1:3080',
+      origin: 'null',
+      cookie: 'dsh-auth-session=v1.token',
+      'content-type': 'application/json',
+    },
+  }
+  assert.equal(isTrustedCaller(nullOriginDesktop), true, 'Desktop shell with null origin must be accepted')
+})

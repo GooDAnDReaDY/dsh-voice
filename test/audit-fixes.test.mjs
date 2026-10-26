@@ -761,7 +761,7 @@ test('Issue #198: native TokenSpan and draftRev guard prevent overwriting edited
 
   assert.equal(captured, 1, 'captureInsertion must be called at recording start')
   assert.equal(insertArgs.length, 1, 'insertText must be invoked')
-  assert.equal(insertArgs[0].text, 'Transcript')
+  assert.equal(insertArgs[0].text, ' Transcript')
   assert.deepEqual(insertArgs[0].span, { start: 4, end: 4, draftRev: 1 }, 'original TokenSpan must be passed to insertText')
   assert.equal(draft, 'seed user edited', 'user edits must NOT be overwritten when insertText rejects stale revision')
 })

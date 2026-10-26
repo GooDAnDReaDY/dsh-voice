@@ -79,6 +79,10 @@
 - Don't: hardcode theme hex colors; register a full inline `ru` dictionary; put secrets in settings (credential *names* only).
 
 ## Locked Design Decisions
+- 2026-10-26 — Dictation chunk separator and configurable low-volume threshold (#13, #14, #297, #298):
+  - Chunk separator in composer insertion (#13, #297): `insertDraftText` in `lib/client-src/30-core.js` computes a contextual space separator (`spaced`) for composer insertion branches (`actions.insertText` and `span`). If draft does not end in whitespace or opening brackets (`(`, `[`, `"`, `'`, `«`), and the incoming chunk does not start with whitespace or punctuation (`.,;:!?…»)]}`), a leading space is prepended. The fallback `actions.setDraft` retains its existing whitespace separator without duplicate spacing.
+  - Configurable lowVolumeThreshold (#14, #298): `lib/schema.js` and `lib/host-routes.js` expose `lowVolumeThreshold` (range `0..1`, default `0.08`). In `lib/client-src/40-recording.js`, the quiet audio hint reads `voice.settings?.lowVolumeThreshold ?? 0.08` instead of a hardcoded constant, allowing users with low-gain microphones or quiet environments to calibrate or disable (`0`) the "Speak louder" warning badge.
+
 - 2026-10-26 — Desktop shell compatibility and loopback origin equivalence (#12, #295):
   - Desktop custom app schemes (`lib/http-util.js`): Added `isDesktopShellRequest(req)`, `hasDshAuthCookie(req)`, and `isOriginOrRefererAllowed` supporting official DeepSeek Desktop scheme `dsh-app://app`, desktop UA (`@deepseek-ai/dsh-desktop/`), and desktop sandboxed views (`Origin: null` on loopback with session cookie).
   - Loopback host equivalence: `localhost:port`, `127.0.0.1:port`, and `[::1]:port` are treated as equivalent same-origin callers when ports match, preventing false-positive origin rejections when frontend binds to localhost while host header reflects 127.0.0.1.

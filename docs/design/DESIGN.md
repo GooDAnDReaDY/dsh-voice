@@ -79,6 +79,11 @@
 - Don't: hardcode theme hex colors; register a full inline `ru` dictionary; put secrets in settings (credential *names* only).
 
 ## Locked Design Decisions
+- 2026-10-27 — Windows 11 & Desktop shell microphone permission diagnostics (#15, #300):
+  - Desktop-aware permission hints (`lib/client-src/72-wizard.js`, `lib/client-src/10-locale.js`): When running within desktop shells (`dsh-desktop`, `dsh-app://`) on Windows 11 or macOS, `getUserMedia` failures (`Permission denied` / `NotAllowedError`) route to OS-specific privacy instructions instead of generic browser popup hints.
+  - Windows Settings URI protocol integration: Render 1-click shortcut to `ms-settings:privacy-microphone` when on Windows, allowing users to immediately reach the "Let desktop apps access your microphone" toggle in Windows 11 Settings.
+  - Device acquisition resilience: Added fallback from `{ deviceId: { exact: id } }` to `{ audio: true }` when a previously stored device ID is no longer accessible or rejected by the OS.
+
 - 2026-10-26 — Dictation chunk separator and configurable low-volume threshold (#13, #14, #297, #298):
   - Chunk separator in composer insertion (#13, #297): `insertDraftText` in `lib/client-src/30-core.js` computes a contextual space separator (`spaced`) for composer insertion branches (`actions.insertText` and `span`). If draft does not end in whitespace or opening brackets (`(`, `[`, `"`, `'`, `«`), and the incoming chunk does not start with whitespace or punctuation (`.,;:!?…»)]}`), a leading space is prepended. The fallback `actions.setDraft` retains its existing whitespace separator without duplicate spacing.
   - Configurable lowVolumeThreshold (#14, #298): `lib/schema.js` and `lib/host-routes.js` expose `lowVolumeThreshold` (range `0..1`, default `0.08`). In `lib/client-src/40-recording.js`, the quiet audio hint reads `voice.settings?.lowVolumeThreshold ?? 0.08` instead of a hardcoded constant, allowing users with low-gain microphones or quiet environments to calibrate or disable (`0`) the "Speak louder" warning badge.

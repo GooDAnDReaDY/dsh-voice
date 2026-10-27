@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.45 - 2026-10-27
+
+### Fixed
+- **Windows 11 & Desktop Microphone Diagnostics & Permission Guidance (#15, #300)**: Improved diagnosis and user feedback in FirstRunWizard (`lib/client-src/72-wizard.js`) and recording initialization (`lib/client-src/40-recording.js`) when running inside DeepSeek Desktop (`dsh-desktop`, `dsh-app://`) on Windows 11. Instead of displaying a generic `Permission denied` and misleading "browser popup" instruction, the wizard detects Windows desktop environments and provides an actionable hint directing users to Windows Settings → Privacy & Security → Microphone → "Let desktop apps access your microphone", plus a 1-click shortcut button opening `ms-settings:privacy-microphone`. Device constraints fallback to `{ audio: true }` when specific `deviceId` fails to acquire. Thanks to `@most-silence` for reporting (GitHub #15).
+
 ## 0.9.44 - 2026-10-26
 
 ### Fixed

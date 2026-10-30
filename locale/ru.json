@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Голосовой ввод (dsh-voice)",
+    "description": "Голосовой ввод для DeepSeek Harness: диктовка с разбивкой по паузам и голосовые сообщения; у каждого режима своя резервная цепочка провайдеров (Deepgram, Groq, HuggingFace, локальный whisper.cpp и любой OpenAI-совместимый API)."
+  }
+}

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.46 - 2026-10-30
+
+### Fixed
+- **UI Localization Consistency & Missing Keys (#312)**: Added 32 missing UI translation keys to `en` and `zh` dictionaries in `lib/client-src/10-locale.js` (including `hostOnline`, `hostOffline`, `whisperReady`, `whisperStopped`, `macroEmpty`, `npuCpu`, `providersAvailable`, `settingsConflict`, noise gate labels, benchmark telemetry strings, and prompt placeholders). Replaced hardcoded string literals across 10 client modules (`30-core.js`, `72-hardware.js`, `72-sensevoice.js`, `72-wizard.js`, `72-macros.js`, `72-dictation-modes.js`, `72-status-card.js`, `72-voice-section.js`, `72-dashboard.js`, `72-hooks.js`) with proper `t(...)` lookups. Thanks to `@masteor` (masteor/dsh-voice).
+
+### Added
+- **Package Locale Metadata Exports (#312)**: Added localized package manifest metadata files `locale/en.json`, `locale/ru.json`, and `locale/zh.json` containing translated plugin catalog titles and descriptions for DSH Plugin Manager. Exported via `package.json` `exports` and included in npm distribution `files`.
+
 ## 0.9.45 - 2026-10-27
 
 ### Fixed

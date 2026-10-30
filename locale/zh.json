@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "语音输入 (dsh-voice)",
+    "description": "DeepSeek Harness 语音输入插件：支持按静音停顿分段的听写与语音消息，每个模式具备独立的服务商备用链（Deepgram、Groq、HuggingFace、本地 whisper.cpp 以及自定义 OpenAI 兼容接口）。"
+  }
+}

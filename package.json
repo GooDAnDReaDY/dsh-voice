@@ -1,6 +1,6 @@
 {
   "name": "@goodandready/dsh-voice",
-  "version": "0.9.45",
+  "version": "0.9.46",
   "description": "Voice input for DeepSeek Harness: dictation chunked by pauses and voice messages, each with its own provider fallback chain (Deepgram, Groq, HuggingFace, local whisper.cpp, plus any OpenAI-compatible API of your own).",
   "license": "MIT",
   "type": "module",
@@ -9,7 +9,8 @@
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
     "./package.json": "./package.json",
-    "./cordis.patch.yml": "./cordis.patch.yml"
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
     "lib/*.js",
@@ -17,7 +18,8 @@
     "README.md",
     "README.zh.md",
     "README.ru.md",
-    "LICENSE"
+    "LICENSE",
+    "locale/*.json"
   ],
   "keywords": [
     "dsh",

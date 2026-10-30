@@ -9,7 +9,8 @@
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
     "./package.json": "./package.json",
-    "./cordis.patch.yml": "./cordis.patch.yml"
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
     "lib/*.js",
@@ -17,7 +18,8 @@
     "README.md",
     "README.zh.md",
     "README.ru.md",
-    "LICENSE"
+    "LICENSE",
+    "locale/*.json"
   ],
   "keywords": [
     "dsh",

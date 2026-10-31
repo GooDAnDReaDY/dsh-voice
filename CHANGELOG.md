@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.50] - 2026-10-31
+
+### Added
+- **Modular Client Bundler & Compaction (`#302`)**: Upgraded `scripts/build-client.mjs` with an explicit module manifest (`CLIENT_MODULE_MANIFEST`), AST syntax validation (`vm.Script`), automatic comment & whitespace compaction, and strict `< 250 KiB` budget enforcement (reducing `lib/client.js` size by >40 KiB).
+- **Fault-Isolated `VoiceErrorBoundary` (`#303`)**: Extracted `lib/client-src/28-error-boundary.js` (`VoiceErrorBoundary`) and wrapped composer controls, waveform visualizer pill, setup wizard, SenseVoice installer, and plugin settings card with section-tagged error recovery UI.
+
 ## [0.9.49] - 2026-10-31
 
 ### Added

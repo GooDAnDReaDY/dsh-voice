@@ -242,3 +242,5 @@ To prevent regressions and audit false positives regarding Cyrillic characters i
 
 
 - **Server Subsystems & Client DAO (`v0.9.49`, `#304`, `#307`)**: `lib/index.js` acts as a thin Cordis orchestrator delegating to `lib/server-daemons.js`, `lib/server-routes.js`, and `lib/server-tools.js`. Client UI components communicate with backend endpoints exclusively via `apiClient` (`lib/client-src/25-api.js`).
+
+- **Modular Bundler & Error Boundaries (`v0.9.50`, `#302`, `#303`)**: `scripts/build-client.mjs` compiles and compacts `lib/client-src/` modules with `vm.Script` validation and `< 250 KiB` budget enforcement. `VoiceErrorBoundary` (`lib/client-src/28-error-boundary.js`) isolates UI rendering faults across composer, visualizer, wizard, and settings views.

@@ -139,3 +139,29 @@ test('plainConfig unwraps nested Volatile boxes, getters and functions (#227)', 
     arrayField: ['item-0', 'item-1', { sub: 'item-2-sub' }],
   })
 })
+
+import { resolveConfig, markVolatile, makeVolatile, Config as SchemaConfig } from '../lib/schema.js'
+
+test('Issue #305: resolveConfig normalizes volatile, partial, and malformed configs deterministically', () => {
+  const resolvedEmpty = resolveConfig(null)
+  assert.equal(resolvedEmpty.hotkey, 'Control')
+  assert.equal(resolvedEmpty.deepgramBaseUrl, 'https://api.deepgram.com')
+  assert.equal(resolvedEmpty.lowVolumeThreshold, 0.08)
+
+  const resolvedVolatile = resolveConfig({
+    hotkey: { get: () => 'Alt' },
+    deepgramBaseUrl: { get: () => '  https://dg.internal.local  ' },
+    lowVolumeThreshold: { get: () => 0.15 },
+  })
+  assert.equal(resolvedVolatile.hotkey, 'Alt')
+  assert.equal(resolvedVolatile.deepgramBaseUrl, 'https://dg.internal.local')
+  assert.equal(resolvedVolatile.lowVolumeThreshold, 0.15)
+
+  // Graceful fallback on out-of-range values
+  const resolvedOut = resolveConfig({ lowVolumeThreshold: 5 })
+  assert.equal(resolvedOut.lowVolumeThreshold, 1)
+
+  assert.ok(SchemaConfig, 'SchemaConfig is exported from lib/schema.js')
+  assert.equal(typeof markVolatile, 'function')
+  assert.equal(typeof makeVolatile, 'function')
+})

@@ -230,3 +230,8 @@ To prevent regressions and audit false positives regarding Cyrillic characters i
 3. **Continuous Automated Verification**:
    - `test/linguistic-data.test.mjs` scans all source modules, asserting zero Cyrillic characters in comments, verifying that Cyrillic literals are restricted strictly to the functional allowlist, and ensuring client locale dictionaries contain zero unexpected Cyrillic strings.
 
+
+- 2026-10-31 — Schemastery configuration unification (#305) and typed domain error hierarchy (#309):
+  - Unified volatile Schemastery helpers and added `resolveConfig(rawConfig)` in `lib/schema.js`.
+  - Added `lib/errors.js` (`VoiceError`, `ProviderAuthError`, `ProviderQuotaError`, `ProviderRateLimitError`, `ProviderServerError`, `DaemonUnavailableError`, `AudioFormatError`, `ChainExhaustedError`) with `isRetryable` and `shouldFallback()` governing `runChain` in `lib/chain.js`.
+

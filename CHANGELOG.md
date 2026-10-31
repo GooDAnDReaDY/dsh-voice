@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.51] - 2026-10-31
+
+### Added
+- **Unidirectional `SettingsDraftStore` (`#308`)**: Added `lib/client-src/70-draft-store.js` (`createSettingsDraftStore`, `validateSettingsDraft`, `isSettingsDraftDirty`) separating `savedConfig` and `draftConfig` with reactive dirty/validity computation, `patchDraft`, `patchNestedDraft`, `commit`, and `reset` rollback.
+- **Design Tokens & Atomic UI Primitives (`#311`)**: Added `DESIGN_TOKENS` (`lib/client-src/22-design-tokens.js`) mapped strictly to DSH CSS variables and reusable atomic primitives (`UiActionButton`, `UiStatusBadge`, `UiSectionCard`, `UiCheckToggle` in `lib/client-src/29-ui-primitives.js`).
+
 ## [0.9.50] - 2026-10-31
 
 ### Added

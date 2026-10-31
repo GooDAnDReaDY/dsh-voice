@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.47 - 2026-10-31
+
+### Added
+- **Typed Domain Error Hierarchy & Failure Classification (#309)**: Introduced `lib/errors.js` defining `VoiceError`, `ProviderAuthError`, `ProviderQuotaError`, `ProviderRateLimitError`, `ProviderServerError`, `DaemonUnavailableError`, `AudioFormatError`, and `ChainExhaustedError` with `isRetryable`, `shouldFallback()`, and structured JSON serialization. Updated `lib/chain.js`, `lib/provider-http.js`, `lib/providers.js`, and `lib/host-routes.js` so fallback chains classify HTTP status codes (401/402/403/415/422/429/5xx), abort early on non-fallback errors (`shouldFallback() === false`), and attach structured `domainCode`, `isRetryable`, and per-attempt diagnostics to error responses.
+
+### Changed
+- **Schemastery Configuration Unification & Deterministic Resolver (#305)**: Unified volatile schema helpers (`markVolatile`, `makeVolatile`, `isVolatileRef`, `plainConfig`) and added `resolveConfig(rawConfig)` in `lib/schema.js`. Consolidated runtime configuration resolution in `lib/index.js` and `lib/config-compat.js`.
+
 ## 0.9.46 - 2026-10-30
 
 ### Fixed

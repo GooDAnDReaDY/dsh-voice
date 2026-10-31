@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.49] - 2026-10-31
+
+### Added
+- **Server Modular Decomposition (`#304`)**: Extracted server daemon lifecycle (`lib/server-daemons.js`), transcription & polish pipeline + agent tool registration (`lib/server-tools.js`), and HTTP/WebSocket route registration with explicit `RouteDeps` (`lib/server-routes.js`), reducing `lib/index.js` below 100 lines.
+- **Client API DAO Layer (`#307`)**: Added centralized `apiClient` in `lib/client-src/25-api.js` encapsulating all `/dsh-voice/*`, `/api/dsh-voice/update`, and WebSocket streaming requests with unified session token headers and cache policies.
+
 ## 0.9.48 - 2026-10-31
 
 ### Added

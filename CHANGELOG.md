@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.48 - 2026-10-31
+
+### Added
+- **STT Provider Strategy Pattern & Extensible Registry (#306)**: Extracted provider implementations into dedicated `SpeechToTextProvider` strategy classes (`DeepgramProvider`, `GroqProvider`, `HuggingFaceProvider`, `LocalWhisperProvider`, `SenseVoiceProvider`, `OpenAICompatibleProvider`, `BrowserStubProvider`) managed by `ProviderRegistry` in `lib/provider-registry.js`. Added per-provider `validateConfig()` and `healthcheck()` hooks while preserving 100% compatibility with `makeProviders` and fallback chains.
+- **Process Supervisor & Lifecycle FSM (#310)**: Added `ProcessSupervisor` and `DAEMON_STATES` (`STOPPED`, `STARTING`, `RUNNING`, `DEGRADED`, `CRASHED`, `RESTARTING`) in `lib/supervisor.js` with transition history, crash counters, periodic heartbeat health checks, and deterministic process cleanup on Cordis `dispose`. Integrated `whisperState` and `sensevoiceState` into `lib/local-daemon.js` and `GET /dsh-voice/status`.
+
 ## 0.9.47 - 2026-10-31
 
 ### Added

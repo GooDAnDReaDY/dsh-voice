@@ -235,3 +235,8 @@ To prevent regressions and audit false positives regarding Cyrillic characters i
   - Unified volatile Schemastery helpers and added `resolveConfig(rawConfig)` in `lib/schema.js`.
   - Added `lib/errors.js` (`VoiceError`, `ProviderAuthError`, `ProviderQuotaError`, `ProviderRateLimitError`, `ProviderServerError`, `DaemonUnavailableError`, `AudioFormatError`, `ChainExhaustedError`) with `isRetryable` and `shouldFallback()` governing `runChain` in `lib/chain.js`.
 
+
+- 2026-10-31 — STT Provider Strategy Registry (#306) and Process Supervisor FSM (#310):
+  - Added `lib/provider-registry.js` implementing `SpeechToTextProvider` strategy hierarchy and `ProviderRegistry`.
+  - Added `lib/supervisor.js` implementing `ProcessSupervisor` lifecycle FSM (`STOPPED`, `STARTING`, `RUNNING`, `DEGRADED`, `CRASHED`, `RESTARTING`) integrated with `lib/local-daemon.js` and `/dsh-voice/status`.
+

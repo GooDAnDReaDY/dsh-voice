@@ -240,3 +240,5 @@ To prevent regressions and audit false positives regarding Cyrillic characters i
   - Added `lib/provider-registry.js` implementing `SpeechToTextProvider` strategy hierarchy and `ProviderRegistry`.
   - Added `lib/supervisor.js` implementing `ProcessSupervisor` lifecycle FSM (`STOPPED`, `STARTING`, `RUNNING`, `DEGRADED`, `CRASHED`, `RESTARTING`) integrated with `lib/local-daemon.js` and `/dsh-voice/status`.
 
+
+- **Server Subsystems & Client DAO (`v0.9.49`, `#304`, `#307`)**: `lib/index.js` acts as a thin Cordis orchestrator delegating to `lib/server-daemons.js`, `lib/server-routes.js`, and `lib/server-tools.js`. Client UI components communicate with backend endpoints exclusively via `apiClient` (`lib/client-src/25-api.js`).

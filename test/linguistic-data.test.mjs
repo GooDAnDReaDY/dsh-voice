@@ -14,6 +14,7 @@ const ALLOWED_CYRILLIC_FILES = new Set([
   'lib/client-src/24-code-casing.js',
   'lib/client-src/30-core.js',
   'lib/client-src/40-recording.js',
+  'lib/client-src/44-voice-actions.js',
   'lib/client.js',
 ])
 

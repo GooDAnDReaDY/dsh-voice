@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.9.53] - 2026-11-05
+
+### Added
+- **Hands-Free Agent Actions & Session Commands (#322)**:
+  - Added dedicated modular action dispatcher `lib/client-src/44-voice-actions.js` (`executeVoiceAction`, `clearDraft`).
+  - Added hands-free agent control commands: `stop_generation` ("останови генерацию", "стоп агент", "stop generation", "stop agent", "停止生成"), `new_chat` ("новый чат", "новый диалог", "new chat", "新建对话"), `clear` ("очисти", "стереть всё", "clear draft", "清空").
+  - Added on-the-fly mode switching via speech: `switch_dictation` ("режим диктовки", "switch to dictation", "听写模式") and `switch_voice_note` ("режим голосового", "voice note mode", "切换到语音").
+  - Extended server-side and client-side normalization & session command recognizers (`lib/normalize.js`, `lib/transcribe-core.js`) with trailing command extraction and multi-lingual triggers (RU/EN/ZH).
+- **Web Audio Cues & Dual Push-to-Talk UX (#323)**:
+  - Added zero-dependency acoustic cue synthesizer `lib/client-src/23-audio-cues.js` (`playAudioCue`) using Web Audio API oscillators for micro-feedback on recording start (440Hz->880Hz chirps), stop (700Hz->350Hz), and action success (587Hz->880Hz chime).
+  - Added `audioFeedback` toggle in `lib/schema.js`, client settings card (`72-voice-section.js`), and symmetric locale dictionaries (`10-locale.js`).
+  - Implemented dual ergonomic Push-to-Talk vs Click-to-Toggle behavior in `lib/client-src/42-hotkey.js` (press-and-hold >350ms activates push-to-talk auto-stop on key/pointer release; short tap keeps recording active until explicit stop).
+
 ## [0.9.52] - 2026-11-05
 
 ### Added

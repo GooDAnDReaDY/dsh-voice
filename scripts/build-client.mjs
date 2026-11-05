@@ -15,6 +15,7 @@ export const CLIENT_MODULE_MANIFEST = [
   { id: 'i18n/locale', file: '10-locale.js' },
   { id: 'styles/composer-css', file: '20-css.js' },
   { id: 'styles/design-tokens', file: '22-design-tokens.js' },
+  { id: 'core/code-casing', file: '24-code-casing.js' },
   { id: 'api/client', file: '25-api.js' },
   { id: 'ui/error-boundary', file: '28-error-boundary.js' },
   { id: 'ui/primitives', file: '29-ui-primitives.js' },

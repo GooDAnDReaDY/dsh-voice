@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.52] - 2026-11-05
+
+### Added
+- **Workspace Glossary & Dev Code Casing (#320)**:
+  - Added code casing transformation (`applyCodeCasing`) supporting `camelCase`, `snake_case`, `PascalCase`, `CONSTANT_CASE`, and `kebab-case` with Russian transliteration and dev term dictionary (`юзер айди` -> `userId`, `get auth token` -> `get_auth_token`).
+  - Added dynamic workspace vocabulary extraction in client scanning active DOM tab attributes (`[data-filename]`, `[data-path]`, `.tab-active`, `document.title`).
+  - Expanded `DEFAULT_BILINGUAL_PROMPT` and keyword pools with modern cloud & developer terms (`k8s`, `kubectl`, `PostgreSQL`, `Redis`, `GraphQL`, `Next.js`, `FastAPI`, `rebase`, `cherry-pick`).
+- **Voice-to-Prompt Bug Report Mode & Filler Word Cleaner (#321)**:
+  - Added structured `bug` report transformation mode to `ALL_DICTATION_MODES` and `DEFAULT_DICTATION_PROMPTS` generating actionable reports with Problem Summary, Observed Behavior / Error, Steps to Reproduce, and Expected Behavior.
+  - Added `cleanFillerWords` for automatic deduplication of adjacent stuttering words and stripping verbal hesitation clutter (both Russian and English verbal fillers) in `normalizePhrase` and client `tidyPhrase`.
+  - Added client settings UI support for selecting `bug` mode and customizing its prompt in `72-dictation-modes.js` and `10-locale.js` (en/zh).
+
 ## [0.9.51] - 2026-10-31
 
 ### Added

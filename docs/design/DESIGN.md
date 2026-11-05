@@ -10,7 +10,7 @@
 
 ## User Surfaces
 - Web/UI:
-  - Composer buttons (`conversation.input.right`): mic (dictation), wave (voice message), play last note.
+  - Composer buttons (`conversation.input.right`): mic (dictation), wave (voice message), play last note; individual visibility toggles (`showDictationModeButton`, `showDictationButton`, `showMessageButton`).
   - Recording pill (`conversation.input.dock`): cancel, visualizer/caption, stop, pending send countdown, error.
   - Settings card (`settings.plugin.item`, key `dsh-voice`): chains, custom providers, general options, SenseVoice, provider health dashboard.
   - Settings card (`settings.plugin.item`, key `dsh-voice`): chains, custom providers, general options, SenseVoice, provider health dashboard, dictation mode prompt templates, voice action macros.

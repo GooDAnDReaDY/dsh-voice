@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.54] - 2026-11-05
+
+### Added
+- **Independent Composer Button Visibility Controls (#326)**:
+  - Added schema configuration properties `showDictationModeButton`, `showDictationButton`, and `showMessageButton` (all default: `true`) in `lib/schema.js` and status routes (`lib/host-routes.js`).
+  - Added individual visibility toggles in the plugin settings card (`lib/client-src/72-voice-section.js`) allowing users to independently show or hide the dictation mode cycle button, the voice typing mic button, and the voice message button.
+  - Implemented reactive non-disruptive composer rendering in `lib/client-src/41-buttons.js` and `60-composer.js`: buttons update immediately upon saving without page or server restart; when all controls are hidden, the slot safely renders null with zero layout overhead while preserving hotkeys, VAD, and transcription functionality.
+  - Added unit test suite `test/input-controls.test.mjs` covering all 8 visibility toggle permutations, null slot fallback, reactive settings dispatch, and symmetric multilingual locales.
+
 ## [0.9.53] - 2026-11-05
 
 ### Added

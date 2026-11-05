@@ -211,7 +211,19 @@ Open **Settings → Plugins → Plugin settings → Voice** in the Web UI:
     hotkey: Control
     autoStart: true
     whisperModel: /models/ggml-medium-q8_0.bin
+    # Composer button visibility toggles (default: true)
+    showDictationModeButton: true # Mode selector pill ([Clean], [Task], [Bug], [Note], [Verbatim])
+    showDictationButton: true     # Voice typing / mic button
+    showMessageButton: true       # Voice note / message button
 ```
+
+> **Composer button visibility (#326, #328)**:
+> The `showDictationModeButton`, `showDictationButton`, and `showMessageButton` settings allow independently toggling the visibility of voice action buttons in the composer area (`conversation.input.right`).
+> - When a button is disabled, it is cleanly removed from the interface across both current and newly opened chat tabs.
+> - When all three buttons are disabled, the container returns `null` and unmounts with zero DOM footprint.
+> - Settings persist reliably across application restarts in both Desktop and Web profiles (saved in `cordis.patch.yml`).
+> - Underlying voice functionality (including keyboard push-to-talk with `hotkey: Control`, Silero VAD, and STT pipelines) remains fully active.
+> - Primary navigation buttons (`Remote`, `Tasks`, `Kanban`, `Scheduled Tasks`) belong to separate core slots and remain completely unaffected.
 
 > **Note on language handling**: Setting `language: ""` (default) allows providers to auto-detect the spoken language. Spoken numeral normalization (`wordsToDigits`) and standard Russian tech slang correction (`DEFAULT_JARGON_DICTIONARY`) activate conditionally only when Russian is selected or auto-detected in the transcript, ensuring non-Russian speech is never distorted.
 

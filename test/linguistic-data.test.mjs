@@ -11,6 +11,7 @@ const ALLOWED_CYRILLIC_FILES = new Set([
   'lib/normalize.js',
   'lib/transcribe-core.js',
   'lib/polish.js',
+  'lib/client-src/24-code-casing.js',
   'lib/client-src/30-core.js',
   'lib/client-src/40-recording.js',
   'lib/client.js',

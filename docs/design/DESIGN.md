@@ -4,6 +4,7 @@
 - Purpose: voice input for DeepSeek Harness — dictation and voice messages with multi-provider STT fallback chains.
 - Audience: DSH users who dictate into the composer or send voice notes without leaving the harness UI.
 - Status: active plugin, public package identity `@goodandready/dsh-voice`.
+- Voice transformation: verbatim, clean, task (checklist & acceptance criteria), bug (structured triage report), note, with code casing (`camelCase`, `snake_case`, etc.) and verbal filler cleaning.
 
 ## User Surfaces
 - Web/UI:
@@ -11,7 +12,7 @@
   - Recording pill (`conversation.input.dock`): cancel, visualizer/caption, stop, pending send countdown, error.
   - Settings card (`settings.plugin.item`, key `dsh-voice`): chains, custom providers, general options, SenseVoice, provider health dashboard.
   - Settings card (`settings.plugin.item`, key `dsh-voice`): chains, custom providers, general options, SenseVoice, provider health dashboard, dictation mode prompt templates, voice action macros.
-  - Mode selector pill: 1-click cycle button in composer buttons (`[Clean]`, `[Task]`, `[Note]`, `[Verbatim]`) and badge indicator in recording pill with pre-recording snapshot isolation.
+  - Mode selector pill: 1-click cycle button in composer buttons (`[Clean]`, `[Task]`, `[Bug]`, `[Note]`, `[Verbatim]`) and badge indicator in recording pill with pre-recording snapshot isolation.
 - DSH UI / settings / slots:
   - `conversation.input.right` (composer action buttons: mic, voice message, play note)
   - `conversation.input.dock` (recording pill with waveform visualizer)

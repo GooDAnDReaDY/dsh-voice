@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.55] - 2026-11-05
+
+### Added
+- **Verified Composer Button Visibility & Slot Isolation (#328)**:
+  - Documented `showDictationModeButton`, `showDictationButton`, and `showMessageButton` settings in `README.md`, `README.ru.md`, `README.zh.md`, and updated `docs/design/DESIGN.md`.
+  - Added persistence and restart cycle verification test in `test/input-controls.test.mjs` verifying config save/reload roundtrip and restoration of individual buttons.
+  - Added slot registration isolation test verifying voice plugin injects strictly into composer input and plugin settings, with zero injection into primary navigation elements (`navbar.item`, `remote`, `tasks`, `kanban`, `cron`).
+  - Proved underlying hotkey (`Control`), VAD, and speech recognition pipelines remain fully operational when buttons are hidden.
+
 ## [0.9.54] - 2026-11-05
 
 ### Added

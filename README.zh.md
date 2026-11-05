@@ -169,6 +169,45 @@ v0.8.18 质量审查后的修复批次（Gitea #79–#87，PR #88）：
 
 ---
 
+## ⚙️ 配置说明
+
+在 Web UI 中打开 **设置 → 插件 → 插件设置 → Voice**：
+
+```yaml
+- id: dsh-voice
+  config:
+    dictation:
+      language: "" # 默认自动检测；或指定 "zh"、"en"、"ru" 等
+      vadSilenceMs: 700
+      chain:
+        - provider: deepgram
+        - provider: groq
+        - provider: local-whisper
+    message:
+      language: "" # 默认自动检测；或指定 "zh"、"en"、"ru" 等
+      autoSendMs: 4000
+      chain:
+        - provider: openai
+        - provider: local-whisper
+    hotkey: Control
+    autoStart: true
+    whisperModel: /models/ggml-medium-q8_0.bin
+    # 输入框按钮可见性开关（默认：true）
+    showDictationModeButton: true # 听写模式选择胶囊 ([Clean], [Task], [Bug], [Note], [Verbatim])
+    showDictationButton: true     # 语音输入 / 麦克风按钮
+    showMessageButton: true       # 语音消息按钮
+```
+
+> **输入框按钮可见性 (#326, #328)**：
+> `showDictationModeButton`、`showDictationButton` 与 `showMessageButton` 支持在输入框右侧（`conversation.input.right`）独立显示或隐藏按钮。
+> - 单独关闭时，按钮在当前及新建会话中立即隐藏。
+> - 全部关闭时，容器组件返回 `null` 并完全卸载，零 DOM 残留。
+> - 设置在 Desktop 与 Web 环境下重启均可靠持久化（保存在 `cordis.patch.yml` 中）。
+> - 底层语音功能（快捷键对讲 `hotkey: Control`、VAD 停顿检测及转写链路）保持完全可用。
+> - 主导航按钮（Remote、Tasks、Kanban、Scheduled Tasks）属于系统核心独立槽位，完全不受影响。
+
+---
+
 ## 📦 安装指南
 
 ```bash

@@ -5,6 +5,8 @@
 - Audience: DSH users who dictate into the composer or send voice notes without leaving the harness UI.
 - Status: active plugin, public package identity `@goodandready/dsh-voice`.
 - Voice transformation: verbatim, clean, task (checklist & acceptance criteria), bug (structured triage report), note, with code casing (`camelCase`, `snake_case`, etc.) and verbal filler cleaning.
+- Agent control & hands-free actions: voice triggers for `stop_generation`, `new_chat`, `clear`, `newline`, and mode switching (`switch_dictation`, `switch_voice_note`).
+- Acoustic feedback: Web Audio API synthesized cues (`audioFeedback`) on start, stop, and action completion.
 
 ## User Surfaces
 - Web/UI:

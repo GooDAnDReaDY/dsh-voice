@@ -15,6 +15,7 @@ export const CLIENT_MODULE_MANIFEST = [
   { id: 'i18n/locale', file: '10-locale.js' },
   { id: 'styles/composer-css', file: '20-css.js' },
   { id: 'styles/design-tokens', file: '22-design-tokens.js' },
+  { id: 'ui/audio-cues', file: '23-audio-cues.js' },
   { id: 'core/code-casing', file: '24-code-casing.js' },
   { id: 'api/client', file: '25-api.js' },
   { id: 'ui/error-boundary', file: '28-error-boundary.js' },
@@ -25,6 +26,7 @@ export const CLIENT_MODULE_MANIFEST = [
   { id: 'core/ws-stream', file: '37-ws-stream.js' },
   { id: 'recording/session', file: '40-recording.js' },
   { id: 'recording/preview', file: '43-preview.js' },
+  { id: 'recording/actions', file: '44-voice-actions.js' },
   { id: 'ui/waveform', file: '50-waveform.js' },
   { id: 'ui/composer', file: '60-composer.js' },
   { id: 'settings/draft-store', file: '70-draft-store.js' },
@@ -47,7 +49,8 @@ export const CLIENT_MODULE_MANIFEST = [
 ]
 
 export function compactClientFragment(source) {
-  const lines = source.split('\n')
+  const noBlock = source.replace(/\/\*[\s\S]*?\*\//g, '')
+  const lines = noBlock.split('\n')
   const out = []
   let prevTrimmed = ''
   for (const line of lines) {

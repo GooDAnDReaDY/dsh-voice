@@ -5,7 +5,6 @@ import {
   hasSameOrigin,
   isTrustedCaller,
   getVoiceSessionToken,
-  setVoiceSessionToken,
   rotateVoiceSessionToken,
   verifyVoiceSessionToken,
 } from '../lib/http-util.js'

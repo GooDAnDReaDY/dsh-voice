@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.9.56] - 2026-11-10
+
+### Fixed
+- **Clean Clone Development & CI Parity (#331)**:
+  - Added required Cordis (`@deepseek-ai/cordis: ^4.0.1`) and DSH runtime framework (`@deepseek-ai/dsh-credentials`, `@deepseek-ai/dsh-host-webserver`, `@deepseek-ai/dsh-llm`, `@deepseek-ai/dsh-tools`, `@deepseek-ai/schemastery`) to `devDependencies` in `package.json`.
+  - Generated deterministic `package-lock.json` enabling `npm ci` and automated vulnerability scanning via `npm audit` on fresh checkouts.
+  - Verified clean clone passes `npm ci` and all 361 tests across 50 test files out of the box.
+- **Background Daemon Error Logging & Zero Empty Catches (#332)**:
+  - Replaced 7 silent empty catches in speech recognition daemon process management (`lib/local-daemon.js`) with structured `ctx.logger.debug('[voice] ...')` diagnostics.
+  - Introduced server utility `lib/best-effort.js` for safe non-critical side effects and WebSocket frame sends.
+  - Safely normalized client-side catches in `lib/client-src/` and updated `scripts/build-client.mjs` compaction to preserve syntactic catch statements (`{ 0 }`) while keeping client bundle size under the 225 KiB / 250 KiB budget threshold (230,200 bytes).
+  - Preflight audit check now passes with 0 empty catch violations.
+- **Dead Export Cleanup & Process Alive Diagnostics (#333)**:
+  - Removed unused internal helper `setVoiceSessionToken` from `lib/http-util.js` and cleaned up test imports.
+  - Connected `isProcessAlive` in `lib/updater.js` into `checkProfileLock` and `formatLockDiagnostic` to report whether the locking process is actively running during profile lock contention.
+
 ## [0.9.55] - 2026-11-05
 
 ### Added

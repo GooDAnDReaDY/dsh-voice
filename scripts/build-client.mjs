@@ -49,14 +49,25 @@ export const CLIENT_MODULE_MANIFEST = [
 ]
 
 export function compactClientFragment(source) {
-  const noBlock = source.replace(/\/\*[\s\S]*?\*\//g, '')
+  const protectedCatch = source.replace(/catch\s*(\([^)]*\))?\s*\{\s*\/\*[\s\S]*?\*\/\s*\}/g, (_, p) => p ? `catch ${p} { 0 }` : 'catch { 0 }')
+  const noBlock = protectedCatch.replace(/\/\*[\s\S]*?\*\//g, '')
   const lines = noBlock.split('\n')
   const out = []
   let prevTrimmed = ''
   for (const line of lines) {
-    const trimmed = line.trim()
+    let trimmed = line.trim()
     if (!trimmed) continue
     if (trimmed.startsWith('//')) continue
+    const m = trimmed.match(/\s+\/\/[^'"`]*$/)
+    if (m) {
+      const before = trimmed.slice(0, m.index)
+      const q1 = (before.match(/'/g) || []).length
+      const q2 = (before.match(/"/g) || []).length
+      const q3 = (before.match(/`/g) || []).length
+      if (q1 % 2 === 0 && q2 % 2 === 0 && q3 % 2 === 0) {
+        trimmed = before.trimEnd()
+      }
+    }
     if (prevTrimmed === 'stopped = true' && trimmed.startsWith('try { recognition.abort()')) {
       out.push('        ' + trimmed)
     } else {

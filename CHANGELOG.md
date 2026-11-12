@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.9.57] - 2026-11-12
+
+### Fixed
+- **Release Packaging Artifact Confinement (#337)**:
+  - Eliminated untracked release tarball from source checkout root and verified `scripts/pack-check.mjs` runs green during `pretest`.
+  - Codified the non-negotiable rule in `docs/design/DESIGN.md` that all packaging tarballs must be generated outside the source repository.
+- **Documentation Autonomy & Broken Reference Cleanup (#338)**:
+  - Removed internal and missing file references (`docs/**`, `index.md`, `AGENTS.md`) from public `README.md` and `README.ru.md`.
+  - Documented explicit `.gitignore` exclusion of `docs/testing` and `docs/plans` in `docs/design/DESIGN.md`.
+- **Silent Rejection Elimination & Settings Diagnostic Logging (#339)**:
+  - Added warning log in `lib/index.js` when config key persistence fails via `scope.set`.
+  - Added debug log in `lib/sensevoice-installer.js` when temporary archive cleanup fails.
+  - Normalized 16 silent `.catch(() => {})` handlers across `lib/client-src/` with safe fallback returns.
+  - Rebuilt `lib/client.js` maintaining bundle size (230,182 bytes) safely below the 225 KiB budget.
+
 ## [0.9.56] - 2026-11-10
 
 ### Fixed

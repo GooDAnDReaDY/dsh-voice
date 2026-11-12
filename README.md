@@ -132,7 +132,7 @@ Quality batch after the v0.8.18 review (Gitea #79–#87, PR #88):
 | Source language | Code comments, errors, and tests are English; EN edit-command phrases added. Spoken RU STT patterns remain for recognition (#86) |
 | Locales | **Changed:** the full inline `ru` dictionary was removed. English is the only bundled locale. Install the translation plugin for Russian UI (#85) |
 | Client source | Browser client is built from ordered `lib/client-src/*.js` fragments via `npm run build:client` (#87) |
-| Process docs | Added `docs/design/DESIGN.md`, `index.md`, project `AGENTS.md`, `docs/testing/unit.md` (#83) |
+| Process docs | Standardized internal project documentation and test suites (#83) |
 
 > [!IMPORTANT]
 > **v0.8.19 locale behavior:** without a translation plugin the Web UI stays in English. Session/edit **spoken** command phrases still match Russian speech for STT where documented; interface labels do not ship a second dictionary.

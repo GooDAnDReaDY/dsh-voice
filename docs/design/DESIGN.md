@@ -248,3 +248,15 @@ To prevent regressions and audit false positives regarding Cyrillic characters i
 - **Modular Bundler & Error Boundaries (`v0.9.50`, `#302`, `#303`)**: `scripts/build-client.mjs` compiles and compacts `lib/client-src/` modules with `vm.Script` validation and `< 250 KiB` budget enforcement. `VoiceErrorBoundary` (`lib/client-src/28-error-boundary.js`) isolates UI rendering faults across composer, visualizer, wizard, and settings views.
 
 - **SettingsDraftStore & Design Tokens (`v0.9.51`, `#308`, `#311`)**: `lib/client-src/70-draft-store.js` provides unidirectional settings state management (`savedConfig` vs `draftConfig`, `isDirty`, `isValid`, `reset`, `commit`). `lib/client-src/22-design-tokens.js` (`DESIGN_TOKENS`) and `lib/client-src/29-ui-primitives.js` (`UiActionButton`, `UiStatusBadge`, `UiSectionCard`, `UiCheckToggle`) unify UI styling on DSH CSS tokens.
+
+
+## Release Packaging & Documentation Invariants (#337, #338)
+
+1. **Release Artifact Confinement (#337)**:
+   - Packaging tarballs (`*.tgz`) must NEVER be created inside the repository source tree or checkout.
+   - All `npm pack` operations during verification or release packaging must specify an external output path (e.g. `--pack-destination /tmp` or `~/.cache/dsh-test-artifacts`).
+   - `scripts/pack-check.mjs` enforces zero untracked tarballs in the source tree during `pretest`.
+
+2. **Public Documentation Autonomy (#338)**:
+   - Public READMEs (`README.md`, `README.ru.md`, `README.zh.md`) must be self-contained and must never reference internal developer documentation (`docs/**`, `index.md`, `AGENTS.md`).
+   - Internal documentation (`docs/testing/`, `docs/plans/`) is excluded from git via `.gitignore` deliberately to avoid leaking work-in-progress artifacts into releases; all canonical design decisions, architecture, and contracts are consolidated in this `docs/design/DESIGN.md`.

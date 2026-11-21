@@ -16,3 +16,18 @@ test('lib/client.js is strictly identical to compiled lib/client-src modular bun
   const actual = await readFile(outFile, 'utf8')
   assert.equal(actual, expected, 'lib/client.js must be in parity with buildClientBundle() output')
 })
+
+test('Issue #352: CLIENT_MODULE_MANIFEST strictly matches client-src directory bidirectionally', async () => {
+  const srcDir = path.join(root, 'lib', 'client-src')
+  const { readdir } = await import('node:fs/promises')
+  const onDisk = (await readdir(srcDir)).filter((f) => f.endsWith('.js')).sort()
+
+  const inManifest = CLIENT_MODULE_MANIFEST.map((m) => m.file)
+  assert.equal(CLIENT_MODULE_MANIFEST.length, 37, 'must have exactly 37 manifest fragments')
+  assert.deepEqual(inManifest, onDisk, 'manifest files must match on-disk files exactly in sorted order')
+
+  for (const m of CLIENT_MODULE_MANIFEST) {
+    assert.ok(m.id && typeof m.id === 'string', `manifest entry must have id: ${JSON.stringify(m)}`)
+    assert.ok(m.file && typeof m.file === 'string', `manifest entry must have file: ${JSON.stringify(m)}`)
+  }
+})

@@ -1,0 +1,45 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify client bundle build matches fragments
+        run: npm run build:check
+
+      - name: Syntax and lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Package size guard & forbidden files check
+        run: |
+          npm pack --dry-run --json > pack.json
+          node -e '
+            const data = JSON.parse(require("fs").readFileSync("pack.json", "utf8"));
+            const files = data[0].files || [];
+            const badSize = files.filter((f) => f.size > 262144);
+            for (const f of badSize) console.error("FILE TOO LARGE:", f.size, f.path);
+            const forbiddenPatterns = ["AGENTS.md", "index.md", "deploy.sh", ".gitea", "docs/"];
+            const badFiles = files.filter((f) => forbiddenPatterns.some((p) => f.path.startsWith(p) || f.path === p));
+            for (const f of badFiles) console.error("FORBIDDEN FILE IN PACKAGE:", f.path);
+            process.exit((badSize.length || badFiles.length) ? 1 : 0);
+          '

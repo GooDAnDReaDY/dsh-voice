@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.58] - 2026-11-21
+
+### Fixed
+- **Status Key Synchronization (#343)**:
+  - Added `vadEngine` and `streamingWs` fields to `/dsh-voice/status` payload so client-side VAD and WebSocket controls stay in sync with host state.
+  - Added tests in `test/routes.test.mjs` verifying presence of both keys.
+- **Accurate Heuristic VAD Documentation & Reporting (#344)**:
+  - Updated client-side VAD and `/vad/status` to accurately report `heuristic-rms-zcr` rather than claiming a neural Silero WASM/ONNX model that was not loaded.
+  - Updated UI descriptions and labels in EN and ZH locales.
+- **Protected Config Revision Reads (#345)**:
+  - Imported `bestEffort` from `./best-effort.js` in `lib/config-routes.js` and wired `ctx?.logger` so that any unexpected exception in `settingsService.describe()` logs safely at debug level without triggering a `ReferenceError` that converts successful settings saves into HTTP 500 errors.
+  - Added test in `test/config-routes.test.mjs` verifying save succeeds when `describe()` throws.
+- **Bug Report Mode Accessibility & Cycler Unification (#346)**:
+  - Included `'bug'` dictation mode in `DICTATION_MODES` in `lib/client-src/45-dictation.js` and canonical `lib/dictation-modes.js`, making the bug report mode reachable via the UI cycler button.
+  - Recompiled `lib/client.js` maintaining bundle size (230,185 bytes) safely under budget.
+  - Updated tests in `test/client-logic.test.mjs`, `test/dictation-modes.test.mjs`, and `test/workspace-glossary-and-prompts.test.mjs`.
+
 ## [0.9.57] - 2026-11-12
 
 ### Fixed

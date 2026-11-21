@@ -393,3 +393,36 @@ test('Issue #12, #295: isTrustedCaller accepts mutating requests from DeepSeek D
   }
   assert.equal(isTrustedCaller(nullOriginDesktop), true, 'Desktop shell with null origin must be accepted')
 })
+
+test('Issue #348: hasSameOrigin strictly rejects non-loopback LAN requests presenting dsh-auth cookie without matching Origin/Referer', () => {
+  const lanReq = {
+    socket: { remoteAddress: '192.168.1.150' },
+    headers: {
+      host: '192.168.1.111:3000',
+      cookie: 'dsh-auth-session=v1.token.signature',
+    },
+  }
+  assert.equal(hasSameOrigin(lanReq), false, 'LAN request with auth cookie but no Origin/Referer must not be same-origin')
+
+  // When Origin matches Host, it is accepted
+  const lanReqWithOrigin = {
+    socket: { remoteAddress: '192.168.1.150' },
+    headers: {
+      host: '192.168.1.111:3000',
+      origin: 'http://192.168.1.111:3000',
+      cookie: 'dsh-auth-session=v1.token.signature',
+    },
+  }
+  assert.equal(hasSameOrigin(lanReqWithOrigin), true, 'LAN request with matching Origin must be same-origin')
+
+  // When Origin is mismatched / forged, it is rejected
+  const lanReqForgedHost = {
+    socket: { remoteAddress: '192.168.1.150' },
+    headers: {
+      host: '192.168.1.111:3000',
+      origin: 'http://evil.com',
+      cookie: 'dsh-auth-session=v1.token.signature',
+    },
+  }
+  assert.equal(hasSameOrigin(lanReqForgedHost), false, 'LAN request with forged Origin must be rejected')
+})

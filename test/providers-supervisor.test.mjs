@@ -110,3 +110,59 @@ test('Issue #310: ProcessSupervisor FSM transitions, crash tracking, heartbeat, 
   assert.ok(transitions.includes(DAEMON_STATES.CRASHED))
   assert.ok(transitions.includes(DAEMON_STATES.STOPPED))
 })
+
+test('Issue #347: ProviderRegistry.checkHealth evaluates validation and credential healthcheck', async () => {
+  const registry = createDefaultProviderRegistry({
+    openai: {
+      template: 'openai-transcriptions',
+      baseURL: 'https://api.openai.com/v1',
+      model: 'whisper-1',
+      keyEnv: 'OPENAI_API_KEY',
+    },
+  })
+
+  // 1. Without credentials: cloud providers report ok: false with missing key reason
+  const healthNoKey = await registry.checkHealth({
+    resolveKey: async () => '',
+    cfg: {
+      groqKeyEnv: 'GROQ_API_KEY',
+      deepgramKeyEnv: 'DEEPGRAM_API_KEY',
+      whisperUrl: 'http://127.0.0.1:8001/inference',
+    },
+  }, { keys: ['groq', 'deepgram', 'local-whisper', 'openai'] })
+
+  assert.equal(healthNoKey.groq.configured, true)
+  assert.equal(healthNoKey.groq.hasKey, false)
+  assert.equal(healthNoKey.groq.ok, false)
+  assert.equal(healthNoKey.groq.reason, 'no GROQ_API_KEY')
+
+  assert.equal(healthNoKey.deepgram.configured, true)
+  assert.equal(healthNoKey.deepgram.hasKey, false)
+  assert.equal(healthNoKey.deepgram.ok, false)
+
+  assert.equal(healthNoKey['local-whisper'].configured, true)
+  assert.equal(healthNoKey['local-whisper'].ok, true)
+
+  assert.equal(healthNoKey.openai.configured, true)
+  assert.equal(healthNoKey.openai.hasKey, false)
+  assert.equal(healthNoKey.openai.ok, false)
+
+  // 2. With credentials: cloud providers report ok: true
+  const healthWithKey = await registry.checkHealth({
+    resolveKey: async (ref) => (ref ? 'sk-secret' : ''),
+    cfg: {
+      groqKeyEnv: 'GROQ_API_KEY',
+      deepgramKeyEnv: 'DEEPGRAM_API_KEY',
+      whisperUrl: 'http://127.0.0.1:8001/inference',
+    },
+  }, { keys: ['groq', 'openai'] })
+
+  assert.equal(healthWithKey.groq.configured, true)
+  assert.equal(healthWithKey.groq.hasKey, true)
+  assert.equal(healthWithKey.groq.ok, true)
+  assert.equal(healthWithKey.groq.reason, null)
+
+  assert.equal(healthWithKey.openai.configured, true)
+  assert.equal(healthWithKey.openai.hasKey, true)
+  assert.equal(healthWithKey.openai.ok, true)
+})

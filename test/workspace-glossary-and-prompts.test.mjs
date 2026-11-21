@@ -10,8 +10,8 @@ import { applyCodeCasing, cleanFillerWords, normalizePhrase } from '../lib/norma
 import { BaseConfig } from '../lib/schema.js'
 import { DEFAULT_BILINGUAL_PROMPT, buildTranscriptionPrompt } from '../lib/transcribe-core.js'
 
-test('Issue #320: ALL_DICTATION_MODES includes bug report mode while preserving DICTATION_MODES compatibility', () => {
-  assert.deepEqual(DICTATION_MODES, ['verbatim', 'clean', 'task', 'note'])
+test('Issue #320, #346: ALL_DICTATION_MODES and DICTATION_MODES include bug report mode', () => {
+  assert.deepEqual(DICTATION_MODES, ['verbatim', 'clean', 'task', 'note', 'bug'])
   assert.ok(ALL_DICTATION_MODES.includes('bug'))
   assert.deepEqual(ALL_DICTATION_MODES, ['verbatim', 'clean', 'task', 'note', 'bug'])
 })

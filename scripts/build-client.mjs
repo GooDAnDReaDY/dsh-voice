@@ -9,6 +9,8 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const defaultSrcDir = path.join(root, 'lib', 'client-src')
 const defaultOutFile = path.join(root, 'lib', 'client.js')
 export const MAX_CLIENT_BUNDLE_BYTES = 250 * 1024
+export const WARN_FRAGMENT_BYTES = 40 * 1024
+export const MAX_FRAGMENT_BYTES = 60 * 1024
 
 export const CLIENT_MODULE_MANIFEST = [
   { id: 'entry/open', file: '00-open.js' },
@@ -78,27 +80,60 @@ export function compactClientFragment(source) {
   return out.join('\n') + '\n'
 }
 
-export async function buildClientBundle({ srcDir = defaultSrcDir, compact = true } = {}) {
+export async function buildClientBundle({ srcDir = defaultSrcDir, compact = true, debug = false } = {}) {
   const files = (await readdir(srcDir)).filter((f) => f.endsWith('.js')).sort()
   if (files.length === 0) throw new Error('no client-src fragments')
   let out = ''
+  const fragmentMap = []
+  let currentLine = 1
+
   for (const f of files) {
     const raw = await readFile(path.join(srcDir, f), 'utf8')
-    out += compact ? compactClientFragment(raw) : (raw.endsWith('\n') ? raw : raw + '\n')
+    const rawBytes = Buffer.byteLength(raw, 'utf8')
+    if (rawBytes > MAX_FRAGMENT_BYTES) {
+      throw new Error(`fragment ${f} (${rawBytes} bytes) exceeds maximum limit (${MAX_FRAGMENT_BYTES} bytes)`)
+    }
+    const chunk = debug
+      ? `/* --- fragment: ${f} --- */\n` + raw + (raw.endsWith('\n') ? '' : '\n')
+      : (compact ? compactClientFragment(raw) : (raw.endsWith('\n') ? raw : raw + '\n'))
+
+    const chunkLines = chunk.split('\n').length - (chunk.endsWith('\n') ? 1 : 0)
+    fragmentMap.push({
+      file: f,
+      startLine: currentLine,
+      endLine: currentLine + Math.max(0, chunkLines - 1),
+      bytes: Buffer.byteLength(chunk, 'utf8'),
+      rawBytes,
+    })
+    currentLine += chunkLines
+    out += chunk
   }
+
   // Verify valid JS syntax of compiled bundle
-  new vm.Script(out, { filename: 'lib/client.js' })
+  new vm.Script(out, { filename: debug ? 'lib/client.debug.js' : 'lib/client.js' })
   const byteLen = Buffer.byteLength(out, 'utf8')
-  if (byteLen > MAX_CLIENT_BUNDLE_BYTES) {
+  if (!debug && byteLen > MAX_CLIENT_BUNDLE_BYTES) {
     throw new Error(`client bundle (${byteLen} bytes) exceeds 250 KiB budget (${MAX_CLIENT_BUNDLE_BYTES} bytes)`)
   }
-  return { code: out, files, bytes: byteLen }
+  return { code: out, files, bytes: byteLen, fragmentMap }
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isMain) {
-  const { code: out, files, bytes } = await buildClientBundle()
+  const isDebug = process.argv.includes('--debug')
   const isCheck = process.argv.includes('--check')
+
+  if (isDebug) {
+    const { code: debugOut, files, bytes, fragmentMap } = await buildClientBundle({ debug: true })
+    const debugDir = path.join(root, '.cache')
+    const debugFile = path.join(debugDir, 'client.debug.js')
+    await import('node:fs/promises').then(fs => fs.mkdir(debugDir, { recursive: true }))
+    await writeFile(debugFile, debugOut, 'utf8')
+    console.log(`built debug bundle lib/client.debug.js from ${files.length} modules (${bytes} bytes)`)
+    process.exit(0)
+  }
+
+  const { code: out, files, bytes, fragmentMap } = await buildClientBundle()
   if (isCheck) {
     let existing = ''
     try { existing = await readFile(defaultOutFile, 'utf8') } catch {}

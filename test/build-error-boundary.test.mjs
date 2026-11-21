@@ -31,3 +31,16 @@ test('Issue #303: VoiceErrorBoundary wraps composer, visualizer, wizard, and set
   assert.match(compSrc, /VoiceErrorBoundary,\s*\{\s*section:\s*'visualizer'\s*\}/)
   assert.match(secSrc, /VoiceErrorBoundary,\s*\{\s*section:\s*'wizard'\s*\}/)
 })
+
+test('Issue #350: buildClientBundle enforces fragment limits, generates line map, and supports debug mode', async () => {
+  const { fragmentMap, files, bytes } = await buildClientBundle()
+  assert.equal(fragmentMap.length, files.length)
+  assert.ok(fragmentMap[0].startLine === 1)
+  assert.ok(fragmentMap[0].endLine >= 1)
+  assert.ok(typeof fragmentMap[0].rawBytes === 'number')
+
+  // Check debug mode
+  const debugRes = await buildClientBundle({ debug: true })
+  assert.ok(debugRes.code.includes('/* --- fragment: 00-open.js --- */'))
+  assert.ok(debugRes.bytes > bytes, 'debug bundle is larger than compacted bundle')
+})

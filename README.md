@@ -73,7 +73,7 @@ graph LR
 ---
 
 ## ✨ Key Features
-- 🎙️ **4 Dictation Post-Processing Modes (#264)**: Verbatim (0 LLM calls, raw STT), Clean text (punctuation & filler removal without fact alteration), Agent task (structured problem/goals/criteria), and Note (key thoughts & actions). Customizable prompt templates with 1-click default restore.
+- 🎙️ **5 Dictation Post-Processing Modes (#264, #346)**: Verbatim (0 LLM calls, raw STT), Clean text (punctuation & filler removal), Agent task (structured problem/goals/criteria), Bug report (structured problem/repro steps/expected), and Note (key thoughts & actions). Customizable prompt templates with 1-click default restore.
 - ⚡ **Dynamic Context-Aware Lexicon Boosting (#167)**: Gathers technical identifiers, code tokens, and vocabulary from composer drafts, recent chat history, and open code blocks, passing them as hints to Deepgram (`&keywords=...`), Groq, local-whisper, and SenseVoice.
 - 🎯 **Voice Action Macros (#167)**: User-defined spoken trigger phrases (e.g. "review code", "run tests") expand into structured prompt templates with `{text}` argument replacement.
 
@@ -101,7 +101,7 @@ graph LR
 
 ---
 
-## 📝 What's New in 0.8.32
+## 📝 Architecture & Features (0.9.x)
 
 10-point feature epic & SenseVoice 1-Click Installer (Issue #129):
 
@@ -235,7 +235,7 @@ Open **Settings → Plugins → Plugin settings → Voice** in the Web UI:
 Registers `transcribe_audio(file_path, language?)` in `ctx.tools`, allowing agents to analyze audio files, interview recordings, and voice notes directly from disk. Path containment is strictly enforced against allowed directories (`allowedAudioDirs`, `~/.dsh`, `tmpdir`, `cwd`) with symlink traversal escape prevention and magic-byte audio format validation.
 
 ### Internal HTTP & WebSocket Endpoints
-* `GET /dsh-voice/ws/stream` — RFC 6455 WebSocket streaming channel for real-time dictation with interim transcription previews (`{ type: 'interim', text }`) and final transcript dispatch (`{ type: 'final', text, action, provider }`). Authenticated via `hasSameOrigin` or `x-dsh-voice-token` (#282, #292).
+* `WebSocket /dsh-voice/ws/stream` — RFC 6455 WebSocket streaming channel (HTTP Upgrade) for real-time dictation with interim transcription previews (`{ type: 'interim', text }`) and final transcript dispatch (`{ type: 'final', text, action, provider }`). Authenticated via `hasSameOrigin` or `x-dsh-voice-token` (#282, #292).
 * `POST /dsh-voice/transcribe` — `{ dataBase64, mimeType, mode }` → `{ ok, text, provider, tookMs }`
 * `POST /dsh-voice/polish` — `{ text }` → `{ ok, text }`
 * `GET /dsh-voice/status` — Returns daemon status, active chains, SenseVoice and `effectiveSensevoiceProvider`. Emits `sessionToken` exclusively to verified same-origin callers (#292).

@@ -21,13 +21,12 @@ test('lib/index.js wires autostart to deferred settings injection and updates', 
   assert.match(indexSrc, /ctx\.on\('config', \(\) => triggerAutostart\(\)\)/, 'must listen to config event')
 })
 
-test('startWhisper and startSensevoice have 30s timeout and premature exit guards', () => {
+test('startWhisper and startSensevoice delegate to unified spawnAndAwaitDaemon with 30s timeout (#353)', () => {
   const daemonSrc = readFileSync(new URL('../lib/local-daemon.js', import.meta.url), 'utf8')
-  // Polling loop 60 * 500ms = 30s in startWhisper
-  assert.match(daemonSrc, /for \(let i = 0; i < 60; i\+\+\) \{[\s\S]*?whisperAlive\(\)[\s\S]*?child\.exitCode/, 'startWhisper must poll up to 60 iterations with premature exit check')
-
-  // Polling loop 60 * 500ms = 30s in startSensevoice
-  assert.match(daemonSrc, /for \(let i = 0; i < 60; i\+\+\) \{[\s\S]*?sensevoiceAlive\(\)[\s\S]*?sensevoiceChild\.exitCode/, 'startSensevoice must poll up to 60 iterations with premature exit check')
+  // Unified polling loop 60 * 500ms = 30s with aliveFn and premature exit check
+  assert.match(daemonSrc, /for \(let i = 0; i < 60; i\+\+\) \{[\s\S]*?aliveFn\(\)[\s\S]*?child\.exitCode/, 'spawnAndAwaitDaemon must poll up to 60 iterations with premature exit check')
+  assert.match(daemonSrc, /startWhisper[\s\S]*?spawnAndAwaitDaemon\(\{[\s\S]*?aliveFn:\s*whisperAlive/, 'startWhisper must delegate to spawnAndAwaitDaemon')
+  assert.match(daemonSrc, /startSensevoice[\s\S]*?spawnAndAwaitDaemon\(\{[\s\S]*?aliveFn:\s*sensevoiceAlive/, 'startSensevoice must delegate to spawnAndAwaitDaemon')
 })
 
 test('autostart dispatch lifecycle executes production apply and responds to settings watch (#214)', async () => {
@@ -147,4 +146,66 @@ test('startWhisper and startSensevoice pass positive finite timeoutMs to shell s
   assert.doesNotMatch(daemonSource, /timeoutMs:\s*0\b/, 'must not pass timeoutMs: 0 which fails DSH 0.2 shell validation')
   // Must pass positive timeoutMs (e.g. timeoutMs: 60000)
   assert.match(daemonSource, /timeoutMs:\s*[1-9]\d*/, 'must pass positive finite timeoutMs to shell execution spec')
+})
+
+test('Issue #353: daemon FSM states are not overwritten by string errors in getters and follow symmetric lifecycle', async () => {
+  const { createLocalDaemons, DAEMON_STATES } = await import('../lib/local-daemon.js')
+
+  let cfg = {
+    autoStart: true,
+    whisperModel: '/models/w.bin',
+    whisperBin: 'whisper-server',
+    whisperUrl: 'http://127.0.0.1:8001',
+    sensevoiceAutostart: true,
+    sensevoiceModel: '/models/s.bin',
+    sensevoiceUrl: 'http://127.0.0.1:6006',
+  }
+
+  let childExitCode = 1
+  let shellExecCount = 0
+
+  const mockCtx = {
+    on: () => {},
+    shell: {
+      resolve: (spec) => spec,
+      execute: async () => {
+        shellExecCount++
+        return {
+          status: 'failed',
+          exitCode: childExitCode,
+          done: Promise.resolve({ code: childExitCode }),
+          readOutput: () => ({ stderr: 'model failed to load' }),
+          kill: () => {},
+        }
+      },
+    },
+  }
+
+  const origFetch = globalThis.fetch
+  globalThis.fetch = async () => ({ ok: false, status: 500 })
+
+  try {
+    const daemons = createLocalDaemons({ live: () => cfg, ctx: mockCtx })
+    assert.equal(daemons.getWhisperState(), DAEMON_STATES.STOPPED, 'initial whisper state is STOPPED')
+    assert.equal(daemons.getSensevoiceState(), DAEMON_STATES.STOPPED, 'initial sensevoice state is STOPPED')
+
+    // Start whisper with failing process
+    const okW = await daemons.startWhisper()
+    assert.equal(okW, false)
+    assert.equal(daemons.getWhisperState(), DAEMON_STATES.CRASHED, 'whisper state transitions to CRASHED on process failure')
+    assert.ok(daemons.getWhisperError().includes('exited prematurely') || daemons.getWhisperError().includes('model failed to load'))
+
+    // Start sensevoice with failing process
+    const okS = await daemons.startSensevoice()
+    assert.equal(okS, false)
+    assert.equal(daemons.getSensevoiceState(), DAEMON_STATES.CRASHED, 'sensevoice state transitions to CRASHED on process failure')
+    assert.ok(daemons.getSensevoiceError().includes('exited prematurely') || daemons.getSensevoiceError().includes('model failed to load'))
+
+    // Dispose resets both to STOPPED
+    daemons.dispose()
+    assert.equal(daemons.getWhisperState(), DAEMON_STATES.STOPPED, 'dispose transitions whisper to STOPPED')
+    assert.equal(daemons.getSensevoiceState(), DAEMON_STATES.STOPPED, 'dispose transitions sensevoice to STOPPED')
+  } finally {
+    globalThis.fetch = origFetch
+  }
 })

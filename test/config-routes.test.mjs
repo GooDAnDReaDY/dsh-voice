@@ -426,3 +426,33 @@ test('PUT /dsh-voice/config returns 409 Conflict when expectedRevision does not 
   assert.equal(body.error.currentRevision, 5)
   assert.equal(savedCalled, false, 'must not persist when revision conflicts')
 })
+
+test('PUT /dsh-voice/config returns 200 with revision: undefined when describe() throws (#345)', async () => {
+  const { ctx, getRoute } = createFakeCtx()
+  let persisted = false
+  const mockSettings = {
+    describe: () => { throw new Error('settings store corrupted') },
+    replace: async () => { persisted = true },
+  }
+  registerConfigRoutes(ctx, {
+    NS: 'dsh-voice',
+    live: () => ({ hotkey: 'Control' }),
+    getSettingsService: () => mockSettings,
+    getScope: () => null,
+    validateConfig: (c) => c,
+    triggerAutostart: () => {},
+  })
+
+  const route = getRoute()
+  const req = mockReq('PUT', JSON.stringify({ config: { hotkey: 'Alt' } }))
+  req.socket = { remoteAddress: '127.0.0.1' }
+  req.fire()
+  const res = mockRes()
+  await route.handler(req, res)
+
+  assert.equal(res.statusCode, 200)
+  assert.equal(persisted, true)
+  const body = jsonBody(res)
+  assert.equal(body.ok, true)
+  assert.equal(body.revision, undefined)
+})

@@ -180,3 +180,21 @@ test('Issue #357: validateAudioPath correctly resolves symlinked root directorie
     try { fs.rmSync(baseDir, { recursive: true, force: true }) } catch {}
   }
 })
+
+test('audio-guard expands ~ homedir prefix in both allowedAudioDirs and file_path', async () => {
+  const dshDir = path.join(os.homedir(), '.dsh')
+  fs.mkdirSync(dshDir, { recursive: true })
+  const testAudio = path.join(dshDir, `tilde-test-${Date.now()}.wav`)
+  fs.writeFileSync(testAudio, Buffer.alloc(100))
+
+  try {
+    const tildePath = '~/.dsh/' + path.basename(testAudio)
+    const roots = getAllowedAudioRoots({ allowedAudioDirs: ['~/.dsh/custom'] })
+    assert.ok(roots.includes(path.resolve(path.join(os.homedir(), '.dsh', 'custom'))))
+
+    const res = await validateAudioPath(tildePath, roots)
+    assert.equal(res.real, fs.realpathSync(testAudio))
+  } finally {
+    try { fs.unlinkSync(testAudio) } catch {}
+  }
+})

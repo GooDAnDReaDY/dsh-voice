@@ -218,3 +218,61 @@ test("host routes behavioral execution: /status, /polish, /transcribe error and 
   assert.equal(transNoAudioRes.statusCode, 400);
   assert.equal(jsonBody(transNoAudioRes).error.code, 'no-audio');
 });
+
+test('Issue #356: /dsh-voice/vad/status enforces GET method and rejects POST/PUT with 405', async () => {
+  const { mockReq, mockRes, jsonBody } = await import('./helpers/mock-http.mjs');
+  const routes = {};
+  const mockCtx = {
+    webServer: {
+      register: (opts) => {
+        routes[opts.path] = opts.handler;
+        return () => {};
+      },
+    },
+    effect: (fn) => fn(),
+  };
+
+  const { registerHostRoutes } = await import('../lib/host-routes.js');
+  registerHostRoutes(mockCtx, {
+    live: () => ({}),
+    daemons: {
+      whisperAlive: async () => false,
+      getWhisperError: () => null,
+      sensevoiceAlive: async () => false,
+      getSensevoiceError: () => null,
+    },
+    statsTracker: { exportAnonymizedReport: () => ({}) },
+    resolveKey: async () => null,
+    transcribe: async () => ({}),
+    polishText: async () => '',
+    sessionCommand: () => null,
+    extractVoiceActions: () => ({}),
+    applyJargonDictionary: (t) => t,
+    KNOWN_KEYS: [],
+  });
+
+  assert.ok(routes['/dsh-voice/vad/status'], 'route /dsh-voice/vad/status must be registered');
+
+  // 1. POST returns 405 Method Not Allowed
+  const postReq = mockReq('POST');
+  const postRes = mockRes();
+  await routes['/dsh-voice/vad/status'](postReq, postRes);
+  assert.equal(postRes.statusCode, 405);
+  assert.equal(jsonBody(postRes).error.code, 'method');
+
+  // 2. PUT returns 405 Method Not Allowed
+  const putReq = mockReq('PUT');
+  const putRes = mockRes();
+  await routes['/dsh-voice/vad/status'](putReq, putRes);
+  assert.equal(putRes.statusCode, 405);
+  assert.equal(jsonBody(putRes).error.code, 'method');
+
+  // 3. GET returns 200 with engine status
+  const getReq = mockReq('GET');
+  const getRes = mockRes();
+  await routes['/dsh-voice/vad/status'](getReq, getRes);
+  assert.equal(getRes.statusCode, 200);
+  const data = jsonBody(getRes);
+  assert.equal(data.ok, true);
+  assert.equal(data.engine, 'heuristic-rms-zcr');
+});

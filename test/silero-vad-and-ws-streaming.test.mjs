@@ -80,7 +80,9 @@ test('lib/host-routes.js: GET /dsh-voice/vad/status returns VAD health check (#2
   }
   await routes['/dsh-voice/vad/status'](mockReq, mockRes)
   assert.equal(statusResult.ok, true)
-  assert.equal(statusResult.sileroAvailable, true)
+  assert.equal(statusResult.sileroAvailable, false)
+  assert.equal(statusResult.engine, 'heuristic-rms-zcr')
+  assert.equal(statusResult.modelLoaded, false)
   assert.equal(statusResult.sampleRate, 16000)
   assert.equal(statusResult.frameSamples, 512)
 })

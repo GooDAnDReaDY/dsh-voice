@@ -75,3 +75,44 @@ test('applyVoiceMacros preserves non-matching text (#167)', () => {
     'обычный текст для диктовки',
   )
 })
+
+test('Issue #355: applyVoiceMacros slices rest by matched prefix length, not raw trigger length', () => {
+  const macros = [
+    { trigger: 'review code!', template: 'Prompt: {text}' },
+    { trigger: 'запусти   тесты', template: 'Cmd: {text}' },
+    { trigger: 'поиск:', template: 'Search for: {{text}}' },
+    { trigger: 'create ticket...', template: 'Title: {input}' },
+  ]
+
+  // 1. Trigger with punctuation doesn't corrupt rest
+  assert.equal(
+    applyVoiceMacros('Review Code! check authentication flow', macros),
+    'Prompt: check authentication flow',
+    'rest must start with first word after trigger without punctuation offset corruption',
+  )
+
+  // 2. Trigger with double spaces in config matches single space in spoken text
+  assert.equal(
+    applyVoiceMacros('Запусти тесты для модуля user', macros),
+    'Cmd: для модуля user',
+  )
+
+  // 3. Colon punctuation in trigger
+  assert.equal(
+    applyVoiceMacros('Поиск: где купить билет на самолет', macros),
+    'Search for: где купить билет на самолет',
+  )
+
+  // 4. Trailing ellipsis in trigger
+  assert.equal(
+    applyVoiceMacros('Create ticket... broken login button', macros),
+    'Title: broken login button',
+  )
+
+  // 5. Trigger in middle of sentence must not match
+  assert.equal(
+    applyVoiceMacros('вчера мы делали review code! и нашли баг', macros),
+    'вчера мы делали review code! и нашли баг',
+    'must not match trigger in the middle of a sentence',
+  )
+})

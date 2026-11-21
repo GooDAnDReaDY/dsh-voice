@@ -140,3 +140,76 @@ test('createStatsTracker records diagnostics and exports anonymized report (#266
   assert.equal(tracker.getDiagnostics().length, 0)
   assert.deepEqual(tracker.get(), {})
 })
+
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { existsSync, unlinkSync, readFileSync } from 'node:fs'
+
+test('Issue #354: exportAnonymizedReport defaults to actual package.json version and preserves chainAttempts', () => {
+  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+  const tracker = createStatsTracker({ persistenceFile: null })
+
+  // 1. Version matches package.json when none supplied
+  const report = tracker.exportAnonymizedReport()
+  assert.equal(report.app.version, pkg.version, 'export must match package.json version')
+  assert.notEqual(report.app.version, '0.9.34', 'must not hardcode 0.9.34')
+
+  // 2. chainAttempts properly recorded and sanitized
+  tracker.recordDiagnostic({
+    mode: 'dictation',
+    provider: 'deepgram',
+    success: false,
+    chainAttempts: [
+      { provider: 'deepgram', ok: false, tookMs: 140, reason: 'rate limit 429' },
+      { provider: 'groq', ok: false, tookMs: 210, reason: 'unauthorized 401' },
+    ],
+    error: 'All providers failed',
+  })
+
+  const diagnostics = tracker.getDiagnostics()
+  assert.equal(diagnostics.length, 1)
+  assert.equal(diagnostics[0].chainAttempts.length, 2)
+  assert.equal(diagnostics[0].chainAttempts[0].provider, 'deepgram')
+  assert.equal(diagnostics[0].chainAttempts[0].ok, false)
+  assert.equal(diagnostics[0].chainAttempts[0].tookMs, 140)
+  assert.equal(diagnostics[0].chainAttempts[0].reason, 'rate limit 429')
+  assert.equal(diagnostics[0].chainAttempts[1].provider, 'groq')
+})
+
+test('Issue #354: diagnostics JSONL persistence survives restarts and clears cleanly', () => {
+  const tmpFile = join(tmpdir(), `dsh-voice-test-diag-${Date.now()}-${Math.random().toString(36).slice(2)}.jsonl`)
+  try {
+    const t1 = createStatsTracker({ persistenceFile: tmpFile })
+    t1.recordDiagnostic({
+      mode: 'dictation',
+      provider: 'groq',
+      success: true,
+      totalTookMs: 120,
+      chainAttempts: [{ provider: 'groq', ok: true, tookMs: 120 }],
+    })
+    t1.recordDiagnostic({
+      mode: 'message',
+      provider: 'local-whisper',
+      success: false,
+      error: 'daemon unavailable',
+    })
+
+    assert.ok(existsSync(tmpFile), 'persistence file must be written')
+
+    // Simulate restart with new tracker instance
+    const t2 = createStatsTracker({ persistenceFile: tmpFile })
+    const loaded = t2.getDiagnostics()
+    assert.equal(loaded.length, 2, 'persisted diagnostics must be reloaded')
+    assert.equal(loaded[0].provider, 'groq')
+    assert.equal(loaded[0].chainAttempts[0].provider, 'groq')
+    assert.equal(loaded[1].provider, 'local-whisper')
+    assert.equal(loaded[1].error, 'daemon unavailable')
+
+    // Clear cleans up file
+    t2.clear()
+    assert.equal(t2.getDiagnostics().length, 0)
+    assert.equal(existsSync(tmpFile), false, 'clear must remove persistence file')
+  } finally {
+    if (existsSync(tmpFile)) unlinkSync(tmpFile)
+  }
+})

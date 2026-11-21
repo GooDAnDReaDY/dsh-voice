@@ -25,11 +25,11 @@ test('isPathUnderRoots enforces boundary-aware directory matching', () => {
   assert.equal(isPathUnderRoots('/tmp/safe/audio.wav', []), false)
 })
 
-test('getAllowedAudioRoots includes tmpdir, ~/.dsh, cwd and custom dirs', () => {
+test('getAllowedAudioRoots includes tmpdir, ~/.dsh and custom dirs, excluding cwd by default (#357)', () => {
   const roots = getAllowedAudioRoots({ allowedAudioDirs: ['/mnt/recordings'] })
   assert.ok(roots.includes(path.resolve(os.tmpdir())))
   assert.ok(roots.includes(path.resolve(path.join(os.homedir(), '.dsh'))))
-  assert.ok(roots.includes(path.resolve(process.cwd())))
+  assert.ok(!roots.includes(path.resolve(process.cwd())), 'process.cwd() must not be in default roots')
   assert.ok(roots.includes(path.resolve('/mnt/recordings')))
 })
 
@@ -146,4 +146,55 @@ test('validateAudioContent validates content independently of file extension (#1
     () => validateAudioContent(textMasqueradingAsWav),
     /transcribe_audio: unsupported or invalid audio file format \(magic bytes check failed\)/
   )
+})
+
+test('Issue #357: validateAudioPath correctly resolves symlinked root directories without false rejection', async () => {
+  const baseDir = path.join(os.tmpdir(), `dsh-symroot-target-${Date.now()}`)
+  const symlinkDir = path.join(os.tmpdir(), `dsh-symroot-link-${Date.now()}`)
+  fs.mkdirSync(baseDir, { recursive: true })
+
+  try {
+    try {
+      fs.symlinkSync(baseDir, symlinkDir)
+    } catch (e) {
+      if (e.code === 'EPERM') return
+      throw e
+    }
+
+    const testFile = path.join(symlinkDir, 'sound.wav')
+    fs.writeFileSync(testFile, Buffer.alloc(100))
+
+    // Validating against symlinked root (like macOS /var -> /private/var) must succeed
+    const res = await validateAudioPath(testFile, [symlinkDir])
+    assert.ok(res.real)
+    assert.equal(res.real, fs.realpathSync(testFile))
+
+    // Validating file in process.cwd() without explicit permission must fail
+    const cwdFile = path.resolve('package.json')
+    await assert.rejects(
+      () => validateAudioPath(cwdFile, [symlinkDir]),
+      /transcribe_audio: path is outside allowed audio directories/
+    )
+  } finally {
+    try { fs.rmSync(symlinkDir, { recursive: true, force: true }) } catch {}
+    try { fs.rmSync(baseDir, { recursive: true, force: true }) } catch {}
+  }
+})
+
+test('audio-guard expands ~ homedir prefix in both allowedAudioDirs and file_path', async () => {
+  const dshDir = path.join(os.homedir(), '.dsh')
+  fs.mkdirSync(dshDir, { recursive: true })
+  const testAudio = path.join(dshDir, `tilde-test-${Date.now()}.wav`)
+  fs.writeFileSync(testAudio, Buffer.alloc(100))
+
+  try {
+    const tildePath = '~/.dsh/' + path.basename(testAudio)
+    const roots = getAllowedAudioRoots({ allowedAudioDirs: ['~/.dsh/custom'] })
+    assert.ok(roots.includes(path.resolve(path.join(os.homedir(), '.dsh', 'custom'))))
+
+    const res = await validateAudioPath(tildePath, roots)
+    assert.equal(res.real, fs.realpathSync(testAudio))
+  } finally {
+    try { fs.unlinkSync(testAudio) } catch {}
+  }
 })

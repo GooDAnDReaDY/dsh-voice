@@ -2,8 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { DICTATION_MODES, DEFAULT_DICTATION_PROMPTS, resolveDictationPrompt } from '../lib/dictation-modes.js'
 
-test('DICTATION_MODES exports 4 canonical modes (#264)', () => {
-  assert.deepEqual(DICTATION_MODES, ['verbatim', 'clean', 'task', 'note'])
+test('DICTATION_MODES exports 5 canonical modes including bug (#264, #346)', () => {
+  assert.deepEqual(DICTATION_MODES, ['verbatim', 'clean', 'task', 'note', 'bug'])
 })
 
 test('resolveDictationPrompt: verbatim mode returns null to guarantee 0 LLM calls (#264)', () => {

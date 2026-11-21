@@ -364,23 +364,26 @@ test('extractContextKeywords extracts technical terms from session messages (#16
   assert.ok(words.includes('Kubernetes'), 'must include Kubernetes')
 })
 
-test('cycleDictationMode cycles across all 4 canonical modes (#264)', () => {
-  assert.equal(DICTATION_MODES.join(','), 'clean,task,note,verbatim')
+test('cycleDictationMode cycles across all 5 canonical modes (#264, #346)', () => {
+  assert.equal(DICTATION_MODES.join(','), 'clean,task,note,bug,verbatim')
   voice.selectedDictationMode = 'clean'
   cycleDictationMode()
   assert.equal(voice.selectedDictationMode, 'task')
   cycleDictationMode()
   assert.equal(voice.selectedDictationMode, 'note')
   cycleDictationMode()
+  assert.equal(voice.selectedDictationMode, 'bug')
+  cycleDictationMode()
   assert.equal(voice.selectedDictationMode, 'verbatim')
   cycleDictationMode()
   assert.equal(voice.selectedDictationMode, 'clean')
 })
 
-test('getDictationModeLabel returns localized label for each mode (#264)', () => {
+test('getDictationModeLabel returns localized label for each mode (#264, #346)', () => {
   const fakeT = (k) => k
   assert.equal(getDictationModeLabel('verbatim', fakeT), 'modeVerbatim')
   assert.equal(getDictationModeLabel('clean', fakeT), 'modeClean')
   assert.equal(getDictationModeLabel('task', fakeT), 'modeTask')
   assert.equal(getDictationModeLabel('note', fakeT), 'modeNote')
+  assert.equal(getDictationModeLabel('bug', fakeT), 'modeBug')
 })

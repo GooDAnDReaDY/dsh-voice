@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.9.59] - 2026-11-21
+
+### Added
+- **Gitea Actions CI Automation (#349)**:
+  - Added `.gitea/workflows/test.yml` running automated pipeline gates on push to `main` and pull requests (`npm ci`, `build:check`, `lint`, `npm test`, and package size & file integrity guard).
+- **Proactive Provider Health Monitoring (#347)**:
+  - Added `checkHealth()` to `ProviderRegistry` executing `validateConfig()` and `healthcheck()` across active provider strategies.
+  - Exposing cached `providerHealth` in `/dsh-voice/status` and dedicated endpoint `GET /dsh-voice/providers/health` to alert dashboard to missing credentials before dictation.
+- **Client Bundle Fragment Budget & Debug Mapping (#350)**:
+  - Added per-fragment size limits (40 KiB warning, 60 KiB max limit) in `scripts/build-client.mjs`.
+  - Added `--debug` build mode producing an uncompacted bundle with fragment headers and line mapping for production error diagnosis.
+
+### Fixed
+- **LAN Auth Cookie Security Hardening (#348)**:
+  - Removed permissive `|| host` fallback in `hasSameOrigin()`, strictly requiring loopback callers when bypassing Origin/Referer verification via `dsh-auth` cookie.
+  - Non-loopback LAN requests must now strictly match Origin/Referer against Host header or present a valid session token.
+- **Documentation Architecture Synchronization (#351)**:
+  - Rebuilt `index.md` module map to document all 30 server modules and 37 client-src fragments.
+  - Synchronized `README.md`, `README.ru.md`, and `README.zh.md` to reflect 5 dictation modes and WebSocket upgrade route.
+  - Updated `docs/design/DESIGN.md` regarding audited framework `devDependencies`.
+- **Client Manifest Parity Enforcement (#352)**:
+  - Synchronized `CLIENT_MODULE_MANIFEST` with all 37 modular fragments on disk and enforced bidirectional parity validation during build.
+
 ## [0.9.58] - 2026-11-21
 
 ### Fixed

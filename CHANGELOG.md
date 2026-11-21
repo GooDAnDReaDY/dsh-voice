@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.9.60] - 2026-11-21
+
+### Added
+- **Dynamic Diagnostics & JSONL Persistence (#354)**:
+  - Dynamically read package version in `exportAnonymizedReport` directly from package manifest.
+  - Record provider `chainAttempts` in `statsTracker.recordDiagnostic` from transcription failover results and errors.
+  - Added bounded JSONL persistence for diagnostics (under `~/.dsh/state/dsh-voice/diagnostics.jsonl` with 1MB rotation limit), enabling diagnostics to survive service restarts.
+
+### Fixed
+- **Daemon Lifecycle Refactoring & FSM State Integrity (#353)**:
+  - Extracted shared `spawnAndAwaitDaemon` in `lib/local-daemon.js` to deduplicate spawn, stdout tracking, and 30s readiness polling between Whisper and SenseVoice.
+  - Preserved `ProcessSupervisor` FSM state directly in `getWhisperState()` and `getSensevoiceState()`, eliminating false `CRASHED` state overrides in getters.
+  - Unified failure transitions across daemons: `DEGRADED` on health check timeout, `CRASHED` on premature process exit, and `STOPPED` on dispose.
+- **Voice Macro Prefix Slicing (#355)**:
+  - In `applyVoiceMacros`, match the normalized trigger against the start of clean text and slice the argument using `match[0].length` rather than `macro.trigger.length`, fixing `{text}` placeholder corruption when triggers contain punctuation or whitespace differences.
+- **VAD Status Route Method Enforcement (#356)**:
+  - Enforced `req.method !== 'GET'` with `405 Method Not Allowed` on `/dsh-voice/vad/status`, aligning with all host routes.
+- **Agent Audio Root Security Boundary Hardening (#357)**:
+  - Removed `process.cwd()` from default `allowedAudioRoots` in `lib/audio-guard.js` to restrict `transcribe_audio` access to intended safe directories.
+  - Symmetrically resolved realpath boundaries for allowed roots in `validateAudioPath` to eliminate false-negative boundary rejections when roots are symlinked (such as macOS `os.tmpdir()`).
+  - Added `~` user home directory prefix expansion across `validateAudioPath` and `getAllowedAudioRoots`.
+
 ## [0.9.59] - 2026-11-21
 
 ### Added

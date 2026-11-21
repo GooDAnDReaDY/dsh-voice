@@ -27,9 +27,12 @@ export const CLIENT_MODULE_MANIFEST = [
   { id: 'core/silero-vad', file: '36-silero-vad.js' },
   { id: 'core/ws-stream', file: '37-ws-stream.js' },
   { id: 'recording/session', file: '40-recording.js' },
+  { id: 'recording/buttons', file: '41-buttons.js' },
+  { id: 'recording/hotkey', file: '42-hotkey.js' },
   { id: 'recording/preview', file: '43-preview.js' },
   { id: 'recording/actions', file: '44-voice-actions.js' },
-  { id: 'ui/waveform', file: '50-waveform.js' },
+  { id: 'recording/dictation', file: '45-dictation.js' },
+  { id: 'ui/visualizers', file: '50-visualizers.js' },
   { id: 'ui/composer', file: '60-composer.js' },
   { id: 'settings/draft-store', file: '70-draft-store.js' },
   { id: 'settings/base', file: '70-settings-base.js' },
@@ -46,7 +49,6 @@ export const CLIENT_MODULE_MANIFEST = [
   { id: 'settings/voice-section', file: '72-voice-section.js' },
   { id: 'settings/wizard', file: '72-wizard.js' },
   { id: 'settings/plugin-card', file: '73-plugin-card.js' },
-  { id: 'entry/register', file: '80-register.js' },
   { id: 'entry/close', file: '90-close.js' },
 ]
 
@@ -83,6 +85,12 @@ export function compactClientFragment(source) {
 export async function buildClientBundle({ srcDir = defaultSrcDir, compact = true, debug = false } = {}) {
   const files = (await readdir(srcDir)).filter((f) => f.endsWith('.js')).sort()
   if (files.length === 0) throw new Error('no client-src fragments')
+  const manifestFiles = CLIENT_MODULE_MANIFEST.map((m) => m.file)
+  const missingInDisk = manifestFiles.filter((f) => !files.includes(f))
+  const missingInManifest = files.filter((f) => !manifestFiles.includes(f))
+  if (missingInDisk.length || missingInManifest.length) {
+    throw new Error(`CLIENT_MODULE_MANIFEST parity error: missing on disk: [${missingInDisk.join(', ')}], missing in manifest: [${missingInManifest.join(', ')}]`)
+  }
   let out = ''
   const fragmentMap = []
   let currentLine = 1
